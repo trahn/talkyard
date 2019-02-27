@@ -38,6 +38,7 @@ const uglify = require('gulp-uglify');
 const gzip = require('gulp-gzip');
 const merge2 = require('merge2');
 const fs = require("fs");
+const save = require('gulp-save');
 const execSync = require('child_process').execSync;
 const preprocess = require('gulp-preprocess');
 
@@ -317,7 +318,9 @@ gulp.task('compileTranslations', () => {
       }));
   return stream.js
       .pipe(gulp.dest(webDestTranslations))
-      .pipe(gulp.dest(serverDestTranslations));
+      .pipe(gulp.dest(serverDestTranslations))
+      .pipe(gzip())
+      .pipe(gulp.dest(webDestTranslations));
 });
 
 gulp.task('buildTranslations', gulp.series('cleanTranslations', 'compileTranslations'));
@@ -485,7 +488,8 @@ gulp.task('compileConcatAllScripts', gulp.series('wrapJavascript', 'compileAllTy
 
 function makeConcatWebScriptsStream() {
   function makeConcatStream(outputFileName, filesToConcat, checkIfNewer, versioned) {
-    var stream = gulp.src(filesToConcat).pipe(plumber());
+    let stream = gulp.src(filesToConcat).pipe(plumber());
+    const dest = versioned === false ? webDest : webDestVersioned;
     if (checkIfNewer) {
       stream = stream.pipe(newer(webDestVersioned + '/' + outputFileName));
     }
@@ -494,7 +498,9 @@ function makeConcatWebScriptsStream() {
         .pipe(concat(outputFileName))
         .pipe(insert.prepend(thisIsAConcatenationMessage))
         .pipe(insert.prepend(makeCopyrightAndLicenseBanner()))
-        .pipe(gulp.dest(versioned === false ? webDest : webDestVersioned));
+        .pipe(gulp.dest(dest))
+        .pipe(gzip())
+        .pipe(gulp.dest(dest));
   }
 
   return merge2(
@@ -506,7 +512,10 @@ function makeConcatWebScriptsStream() {
       makeConcatStream('editor-bundle.js', editorJsFiles, 'DoCheckNewer'),
       makeConcatStream('jquery-bundle.js', jqueryJsFiles, 'DoCheckNewer'),
       makeConcatStream('talkyard-comments.js', embeddedJsFiles, 'DoCheckNewer', false),
-      gulp.src('node_modules/zxcvbn/dist/zxcvbn.js').pipe(gulp.dest(webDestVersioned)));
+      gulp.src('node_modules/zxcvbn/dist/zxcvbn.js')
+          .pipe(gulp.dest(webDestVersioned))
+          .pipe(gzip())
+          .pipe(gulp.dest(webDestVersioned)));
 }
 
 
@@ -529,67 +538,43 @@ gulp.task('enable-prod-stuff', (done) => {
 });
 
 
-// Similar to 'minifyScripts', but a different copyright header.
 gulp.task('minifyTranslations', gulp.series('buildTranslations', () => {
-  /* This won't create any .gz in webDestTranslations, why not?
-  return makeMinJsGzStream(
-      serverDestTranslations,
-      makeTranslationsCopyrightAndLicenseBanner,
-      true,
-      webDestTranslations);
-  // The above plus this, works, but that means we're minifying & zipping twice:
-  return makeMinJsGzStream(
-      webDestTranslations,
-      makeTranslationsCopyrightAndLicenseBanner,
-      true); */
-  // Instead: (and isn't this identical to the 1st alt above ?? why this works, not the above?)
   return gulp.src([`${serverDestTranslations}/**/*.js`, `!${serverDestTranslations}/**/*.min.js`])
       .pipe(plumber())
       .pipe(preprocess({ context: {} }))
       .pipe(uglify())
       .pipe(rename({ extname: '.min.js' }))
       .pipe(insert.prepend(makeTranslationsCopyrightAndLicenseBanner()))
-      .pipe(gulp.dest(webDestTranslations))
+      // The Scala app server code wants non-gz files. Nginx wants gz.
       .pipe(gulp.dest(serverDestTranslations))
       .pipe(gzip())
-      .pipe(gulp.dest(webDestTranslations))
-      .pipe(gulp.dest(serverDestTranslations));
+      .pipe(gulp.dest(webDestTranslations));
 }));
 
 
-// preprocess() removes all @ifdef DEBUG — however (!) be sure to not place '// @endif'
-// on the very last line in a {} block, because it would get removed, by... by what? the
-// Typescript compiler? This results in an impossible-to-understand "Unbalanced delimiter
-// found in string" error with a meaningless stacktrace, in preprocess().
-function makeMinJsGzStream(sourceAndDest, bannerFn, recursive, dest2) {
-  const sourceDir = sourceAndDest + (recursive ? '/**' : '');
-  const stream = gulp.src([`${sourceDir}/*.js`, `!${sourceDir}/*.min.js`])
+gulp.task('minifyScripts', gulp.series('compileConcatAllScripts', 'minifyTranslations', () => {
+  // preprocess() removes all @ifdef DEBUG — however (!) be sure to not place '// @endif'
+  // on the very last line in a {} block, because it would get removed, by... by what? the
+  // Typescript compiler? This results in an impossible-to-understand "Unbalanced delimiter
+  // found in string" error with a meaningless stacktrace, in preprocess().
+  function makeMinJsGzStream(sourceAndDest, gzipped) {
+    let stream = gulp.src([`${sourceAndDest}/*.js`, `!${sourceAndDest}/*.min.js`])
       .pipe(plumber())
       .pipe(preprocess({ context: {} })) // see comment above
       .pipe(uglify())
       .pipe(rename({ extname: '.min.js' }))
-      .pipe(insert.prepend(bannerFn()))
-      .pipe(gulp.dest(sourceAndDest));
-  if (dest2) {
-    stream
-      .pipe(gulp.dest(dest2));
+      .pipe(insert.prepend(makeCopyrightAndLicenseBanner()));
+    if (gzipped) {
+      stream = stream.pipe(gzip());
+    }
+    return stream.pipe(gulp.dest(sourceAndDest));
   }
-  stream
-      .pipe(gzip())
-      .pipe(gulp.dest(sourceAndDest));
-  if (dest2) {
-    stream
-      .pipe(gulp.dest(dest2));
-  }
-  return stream;
-}
-
-
-gulp.task('minifyScripts', gulp.series('compileConcatAllScripts', 'minifyTranslations', () => {
   return merge2(  // can speed up with gulp.parallel? (GLPPPRL)
-      makeMinJsGzStream(serverDest, makeCopyrightAndLicenseBanner),
-      makeMinJsGzStream(webDest, makeCopyrightAndLicenseBanner),
-      makeMinJsGzStream(webDestVersioned, makeCopyrightAndLicenseBanner));
+      // The Scala app server wants non-gzipped files.
+      makeMinJsGzStream(serverDest, false),
+      // Nginx wants gzipped files.
+      makeMinJsGzStream(webDest, true),
+      makeMinJsGzStream(webDestVersioned, true));
 }));
 
 
@@ -607,11 +592,13 @@ gulp.task('compile-stylus', () => {
       .pipe(plumber())
       .pipe(stylus(stylusOpts))
       .pipe(concat('styles-bundle.css'))
-      .pipe(gulp.dest(webDestVersioned))
+      .pipe(save('111'))
+        .pipe(gzip())
+        .pipe(gulp.dest(webDestVersioned))
+      .pipe(save.restore('111'))
       .pipe(cleanCSS())
       .pipe(insert.prepend(makeCopyrightAndLicenseBanner()))
       .pipe(rename({ extname: '.min.css' }))
-      .pipe(gulp.dest(webDestVersioned))
       .pipe(gzip())
       .pipe(gulp.dest(webDestVersioned));
   }
@@ -712,17 +699,34 @@ gulp.task('watch', gulp.series('default', (done) => {
 }));
 
 
-gulp.task('release', gulp.series('enable-prod-stuff', 'minifyScripts', 'compile-stylus'));
-
-
-/*
-gulp.task('clean', gulp.parallel('clean-e2e'), () => {
+gulp.task('delete-non-gzipped', () => {
   return del([
-    'images/web/assets/*.js*',
-    'images/web/assets/*.css* 
-    'images/web/assets/translations/
-    'images/web/assets/v0.6.22-WIP-1* 
-}); */
+      `${webDest}/**/*.js`,
+      `${webDest}/**/*.css`,
+      // Needed in dev mode:
+      //`${serverDest}/**/*.js`,
+      //`!${serverDest}/**/*.min.js`,
+      ]);
+});
+
+
+gulp.task('clean', () => {
+  return del([
+      `${webDest}/**/*.js*`,
+      `${webDest}/**/*.css*`,
+      `${webDestVersioned}`,
+      `${serverDest}/**/*.js*`,
+      `${serverDestTranslations}`]);
+});
+
+
+gulp.task('release', gulp.series(
+    'clean',
+    'enable-prod-stuff',
+    'minifyScripts',
+    'compile-stylus',
+    'delete-non-gzipped'));
+
 
 // ========================================================================
 //  Security tests

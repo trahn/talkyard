@@ -101,20 +101,34 @@ node_modules/.bin/gulp: git-subm-init-upd
 # Sync with the languages in the /translations/ dir. [5JUKQR2]
 #  public/res/2d-bundle.min.js.gz // [SLIMTYPE]
 zipped_bundles:=\
+  images/web/assets/talkyard-comments.js.gz \
   images/web/assets/talkyard-comments.min.js.gz \
+  images/web/assets/talkyard-service-worker.js.gz \
   images/web/assets/talkyard-service-worker.min.js.gz \
+  images/web/assets/$(TALKYARD_VERSION)/editor-bundle.js.gz \
   images/web/assets/$(TALKYARD_VERSION)/editor-bundle.min.js.gz \
+  images/web/assets/$(TALKYARD_VERSION)/jquery-bundle.js.gz \
   images/web/assets/$(TALKYARD_VERSION)/jquery-bundle.min.js.gz \
+  images/web/assets/$(TALKYARD_VERSION)/more-bundle.js.gz \
   images/web/assets/$(TALKYARD_VERSION)/more-bundle.min.js.gz \
+  images/web/assets/$(TALKYARD_VERSION)/slim-bundle.js.gz \
   images/web/assets/$(TALKYARD_VERSION)/slim-bundle.min.js.gz \
+  images/web/assets/$(TALKYARD_VERSION)/staff-bundle.js.gz \
   images/web/assets/$(TALKYARD_VERSION)/staff-bundle.min.js.gz \
+  images/web/assets/$(TALKYARD_VERSION)/styles-bundle.css.gz \
   images/web/assets/$(TALKYARD_VERSION)/styles-bundle.min.css.gz \
+  images/web/assets/$(TALKYARD_VERSION)/zxcvbn.js.gz \
   images/web/assets/$(TALKYARD_VERSION)/zxcvbn.min.js.gz \
+  images/web/assets/$(TALKYARD_VERSION)/translations/en_US/i18n.js.gz \
   images/web/assets/$(TALKYARD_VERSION)/translations/en_US/i18n.min.js.gz \
+  images/web/assets/$(TALKYARD_VERSION)/translations/pl_PL/i18n.js.gz \
   images/web/assets/$(TALKYARD_VERSION)/translations/pl_PL/i18n.min.js.gz \
-  images/app/assets/server-bundle.min.js.gz \
-  images/app/assets/translations/en_US/i18n.min.js.gz \
-  images/app/assets/translations/pl_PL/i18n.min.js.gz
+  images/app/assets/server-bundle.js \
+  images/app/assets/server-bundle.min.js \
+  images/app/assets/translations/en_US/i18n.js \
+  images/app/assets/translations/en_US/i18n.min.js \
+  images/app/assets/translations/pl_PL/i18n.js \
+  images/app/assets/translations/pl_PL/i18n.min.js
 
 minified-asset-bundles: node_modules $(zipped_bundles)
 
@@ -127,10 +141,7 @@ $(zipped_bundles): $@
 
 clean-bundles:
 	@echo Delting script and style bundles:
-	rm -f  public/res/*.js
-	rm -f  public/res/*.js.gz
-	rm -f  public/res/*.css
-	rm -fr public/res/translations/
+	sudo s/d-gulp clean
 
 clean: clean-bundles
 	@echo Delting Scala things and other things:

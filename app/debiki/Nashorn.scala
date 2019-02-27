@@ -562,7 +562,7 @@ class Nashorn(globals: Globals) {
 
     // Load file directly from disk — otherwise, if using getClass.getResourceAsStream(path),
     // Play Framework for some reason won't pick it up any changes, until after
-    // 'sbt clean', which can be confusing and waste time.  [5ARS024]
+    // 'sbt clean', which can be confusing and waste time.
     try {
       scala.io.Source.fromFile(
         "/opt/talkyard/app/assets/" + path)(scala.io.Codec.UTF8).mkString  // [APPJSPATH]
