@@ -425,7 +425,10 @@ function findCommentToScrollTo() {
   if (commentNrHashMatch) {
     var commentNrStr = commentNrHashMatch[1];
     var commentNr = parseInt(commentNrStr);
-    postNrToFocus = commentNr + 1;  // comment nr = post nr - 1  [2PAWC0]
+    if (0 < commentNr && commentNr < 1e9) { // TooHighNumber [05RKVJWG2]
+      // The comment nr is post nr - 1  [2PAWC0].
+      postNrToFocus = commentNr + 1;
+    }
   }
 }
 
