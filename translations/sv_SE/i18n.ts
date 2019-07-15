@@ -237,15 +237,12 @@ var t_sv_SE: TalkyardTranslations = t = {
     // Topic sort order
 
     Active: "Aktiva först",
-    ActiveTopics: "Aktiva ämnen",
     ActiveDescr: "Visar nyligen aktiva samtalsämnen först",
 
     New: "Nya",
-    NewTopics: "Nya ämnen",
     NewDescr: "Visar nyligen skapade ämnen först",
 
     Top: "Populära",
-    TopTopics: "Populara ämnen",
     TopDescr: "Visar populära ämnen först",
 
     // Topic filter dropdown
@@ -475,8 +472,6 @@ var t_sv_SE: TalkyardTranslations = t = {
     ThisPageDeleted: "This page has been deleted",
     CatDeldPageToo: "Category deleted, so this page was deleted too",
 
-    AboutCat: "About category:",
-
     ThreadDeld: "Thread deleted",
     CmntDeld: "Comment deleted",
     PostDeld: "Post deleted",
@@ -516,18 +511,6 @@ var t_sv_SE: TalkyardTranslations = t = {
 
     SolvedClickView_1: "Solved in post #",
     SolvedClickView_2: ", click to view",
-
-    AboveBestFirst: "Above: Replies, best first.",
-    BelowCmtsEvents: "Below: Comments and events.",
-
-    BottomCmtExpl_1: "You're adding a comment that will stay at the bottom of the page. " +
-        "It won't rise to the top even if it gets upvotes.",
-    BottomCmtExpl_2: "This is useful for status messages, e.g. to clarify why you close/reopen " +
-        "a topic. Or for suggesting changes to the original post.",
-    BottomCmtExpl_3: "To reply to someone, click Reply instead.",
-
-    AddComment: "Add comment",
-    AddBottomComment: "Append reply",
 
     PostHiddenClickShow: "Post hidden; click to show",
     ClickSeeMoreRepls: "Click to show more replies",
@@ -579,8 +562,6 @@ var t_sv_SE: TalkyardTranslations = t = {
   // Post actions
 
   pa: {
-    ReplyToOp: "Reply to the Original Post",
-
     CloseOwnQuestionTooltip: "Close this question if you don't need an answer any more.",
     CloseOthersQuestionTooltip: "Close this question if it doesn't need an answer, e.g. if " +
         "it is off-topic or already answered in another topic.",

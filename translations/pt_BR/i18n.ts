@@ -237,15 +237,12 @@ var t_pt_BR: TalkyardTranslations = t = {
     // Topic sort order
 
     Active: "Ativo",
-    ActiveTopics: "Tópicos ativos",
     ActiveDescr: "Mostra tópicos mais recentemente ativos primeiro",
 
     New: "Novo",
-    NewTopics: "Novos tópicos",
     NewDescr: "Mostra tópicos mais novos primeiro",
 
     Top: "Topo",
-    TopTopics: "Tópicos populares",
     TopDescr: "Mostra tópicos mais populares primeiro",
 
     // Topic filter dropdown
@@ -476,8 +473,6 @@ var t_pt_BR: TalkyardTranslations = t = {
     ThisPageDeleted: "Esta página foi deletada",
     CatDeldPageToo: "Categoria deletada; esta página foi deletada também",
 
-    AboutCat: "Sobre a categoria:",
-
     ThreadDeld: "Thread deleted",   // MISSING
     CmntDeld: "Comment deleted",    // MISSING
     PostDeld: "Post deleted",       // MISSING
@@ -517,18 +512,6 @@ var t_pt_BR: TalkyardTranslations = t = {
 
     SolvedClickView_1: "Resolvido no post #",
     SolvedClickView_2: ", clique para visualizar",
-
-    AboveBestFirst: "Acima: Respostas, as melhores aparecem primeiro.",
-    BelowCmtsEvents: "Abaixo: Comentários e eventos.",
-
-    BottomCmtExpl_1: "Você está adicionando um comentário que vai ficar no final da página. " +
-        "Ele não vai subir ao topo mesmo que obtenha votos.",
-    BottomCmtExpl_2: "Isto é útil para mensagens de status, por exemplo para esclarecer por que você está fechando/reabrindo " +
-        "um tópico. Ou para sugerir mudançås no post original.",
-    BottomCmtExpl_3: "Em vez disso, para responder par alguém, clique em Responder.",
-
-    AddComment: "Adicionar comentário",
-    AddBottomComment: "Adicionar comentário no final",
 
     PostHiddenClickShow: "Post ocultado; clique para mostrar",
     ClickSeeMoreRepls: "Clique para mostrar mais respostas",
@@ -580,8 +563,6 @@ var t_pt_BR: TalkyardTranslations = t = {
   // Post actions
 
   pa: {
-    ReplyToOp: "Responder ao Post Original",
-
     CloseOwnQuestionTooltip: "Feche esta pergunta se você não precisa mais de uma resposta.",
     CloseOthersQuestionTooltip: "Feche esta pergunta se você não precisa de uma resposta, por exemplo, se " +
         "é uma pergunta não-relacionada ou já respondida em outro tópico.",

@@ -1,5 +1,11 @@
 // translations.d.ts
 
+// Bash 'grep' for finding unused translation strings:
+//
+//
+// How find *missing* translation strings? VSCode and the Typescript transpiler will
+// show you errors + fail the build for you.
+
 
 interface TalkyardTranslations {
 
@@ -193,13 +199,10 @@ interface TalkyardTranslations {
     in: String;
     AllCats: string;
     Active: string;
-    ActiveTopics: string;
     ActiveDescr: string;
     New: string;
-    NewTopics: string;
     NewDescr: string;
     Top: string;
-    TopTopics: string;
     TopDescr: string;
     AllTopics: string;
     ShowAllTopics: string;
@@ -375,8 +378,6 @@ interface TalkyardTranslations {
 
   // Post actions
   pa: {
-    ReplyToOp: string;
-
     CloseOwnQuestionTooltip: string;
     CloseOthersQuestionTooltip: string;
     CloseToDoTooltip: string;
@@ -431,8 +432,6 @@ interface TalkyardTranslations {
     ThisPageDeleted: string;
     CatDeldPageToo: string;
 
-    AboutCat: string;
-
     ThreadDeld: string;
     CmntDeld: string;
     PostDeld: string;
@@ -472,16 +471,6 @@ interface TalkyardTranslations {
 
     SolvedClickView_1: string;
     SolvedClickView_2: string;
-
-    AboveBestFirst: string;
-    BelowCmtsEvents: string;
-
-    BottomCmtExpl_1: string;
-    BottomCmtExpl_2: string;
-    BottomCmtExpl_3: string;
-
-    AddComment: string;
-    AddBottomComment: string;
 
     PostHiddenClickShow: string;
     ClickSeeMoreRepls: string;

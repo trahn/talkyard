@@ -237,15 +237,12 @@ var t_en_US: TalkyardTranslations = t = {
     // Topic sort order
 
     Active: "Active first",      // MISSING didn't add "first" yet to transls
-    ActiveTopics: "Active topics", // REMOVE use "Active first" instead
     ActiveDescr: "Shows recently active topics first",
 
     New: "New",
-    NewTopics: "New topics",     // REMOVE no longer needed, after forum btns redone
     NewDescr: "Shows newest topics first",
 
     Top: "Popular",              // MISSING didn't rename from Top to Popular in transls
-    TopTopics: "Popular topics", // REMOVE not needed, after forum btns redone
     TopDescr: "Shows popular topics first",
 
     // Topic filter dropdown
@@ -476,8 +473,6 @@ var t_en_US: TalkyardTranslations = t = {
     ThisPageDeleted: "This page has been deleted",
     CatDeldPageToo: "Category deleted, so this page was deleted too",
 
-    AboutCat: "About category:",  // REMOVE
-
     ThreadDeld: "Thread deleted",
     CmntDeld: "Comment deleted",
     PostDeld: "Post deleted",
@@ -494,7 +489,7 @@ var t_en_US: TalkyardTranslations = t = {
 
     TooltipProblFixed: "This has been fixed",
     TooltipDone: "This has been done",
-    ClickStatusNew: "Click to change status to new",
+    ClickStatusNew: "Click to change status to new",  // REMOVE? + others nearby?
 
     TooltipFixing: "We're currently fixing this",
     TooltipImplementing: "We're currently implementing this",
@@ -517,23 +512,6 @@ var t_en_US: TalkyardTranslations = t = {
 
     SolvedClickView_1: "Solved in post #",
     SolvedClickView_2: ", click to view",
-
-    AboveBestFirst: "Above: Replies, best first.",  // REMOVE
-    BelowCmtsEvents: "Below: Comments and events.", // REMOVE
-
-    // I18N _1 and _2 MISSING, all languages  [BTM2PRGR]
-    // REMOVE:
-    BottomCmtExpl_1: "You're adding a progress comment, to tell people how you're making progress " +
-      "towards answering the question / solving the problem / implementing the idea.",
-      //"or maybe why you postpone or close this topic.",
-    // REMOVE:
-    BottomCmtExpl_2: "Progress comments are appended at the bottom of the page.",
-      //"sorted by time (not Like votes).",
-    // REMOVE:
-    BottomCmtExpl_3: "To reply to someone, click Reply instead.",
-
-    AddComment: "Add comment",   // REMOVE
-    AddBottomComment: "Append reply", //"Add bottom comment", [BTM2PRGR]  I18N MISSING   REMOVE
 
     PostHiddenClickShow: "Post hidden; click to show",
     ClickSeeMoreRepls: "Click to show more replies",
@@ -585,8 +563,6 @@ var t_en_US: TalkyardTranslations = t = {
   // Post actions
 
   pa: {
-    ReplyToOp: "Reply to the Original Post",  // REMOVE
-
     CloseOwnQuestionTooltip: "Close this question if you don't need an answer any more.",
     CloseOthersQuestionTooltip: "Close this question if it doesn't need an answer, e.g. if " +
         "it is off-topic or already answered in another topic.",

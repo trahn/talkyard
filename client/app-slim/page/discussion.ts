@@ -936,10 +936,7 @@ const RootPostAndComments = createComponent({
               }
               else {
                 morebundle.openHelpDialogUnlessHidden({ id: '5JKWS', version: 1, defaultHide: false,
-                  content: rFragment({},
-                    r.p({}, t.d.BottomCmtExpl_1),
-                    r.p({}, t.d.BottomCmtExpl_2),
-                    r.p({}, t.d.BottomCmtExpl_3)),
+                  content: "... explain what a progr note is ..."
                   doAfter: doReply
                 });
               } */
