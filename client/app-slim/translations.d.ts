@@ -1,10 +1,19 @@
 // translations.d.ts
 
-// Bash 'grep' for finding unused translation strings:
-//
-//
-// How find *missing* translation strings? VSCode and the Typescript transpiler will
-// show you errors + fail the build for you.
+/* Bash 'grep' for finding unused translation strings:
+
+echo "Unused translation fields, should be ok to remove:"
+all_field_names=$(sed -nr 's/^ +([a-zA-Z0-9_]+): +[^{]+$/\1/p' client/app-slim/translations.d.ts)
+for x in $all_field_names; do
+  matches=$(egrep -lr "\<t\>[.a-zA-Z_]*\.$x\>" client/);
+  if [ -z "$matches" ]; then
+    echo "$x"
+  fi
+done
+
+ * How find *missing* translation strings? VSCode and the Typescript transpiler will
+ * show you errors + fail the build for you.
+ */
 
 
 interface TalkyardTranslations {
@@ -208,7 +217,6 @@ interface TalkyardTranslations {
     ShowAllTopics: string;
     ShowAllTopicsDescr: string;
     WaitingTopics: string;
-    OnlyWaiting: string;
     OnlyWaitingDescr_1: string;
     OnlyWaitingDescr_2: string;
     OnlyWaitingDescr_3: string;
@@ -487,7 +495,6 @@ interface TalkyardTranslations {
     _and: string;
 
     repliesTo: string;
-    dashInReplyTo: string;
     InReplyTo: string;
 
     ClickViewEdits: string;

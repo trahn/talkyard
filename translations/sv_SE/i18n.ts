@@ -253,7 +253,6 @@ var t_sv_SE: TalkyardTranslations = t = {
     ShowAllTopicsDescr: "Dock inte raderade ämnen",
 
     WaitingTopics: "Väntande ämnen",
-    OnlyWaiting: "Bara väntande",
     OnlyWaitingDescr_1: "Visar bara ämnen som ",
     OnlyWaitingDescr_2: "väntar ",
     OnlyWaitingDescr_3: "på ett svar eller på att bli implementerade och gjorda",
@@ -527,7 +526,6 @@ var t_sv_SE: TalkyardTranslations = t = {
     _and: " and",
 
     repliesTo: "replies to",  // MISSING
-    dashInReplyTo: "— in reply to",
     InReplyTo: "In reply to",
 
     ClickViewEdits: "Click to view old edits",

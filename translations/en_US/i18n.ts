@@ -253,7 +253,6 @@ var t_en_US: TalkyardTranslations = t = {
     ShowAllTopicsDescr: "Not deleted topics though",
 
     WaitingTopics: "Waiting topics",          // MISSING
-    OnlyWaiting: "Only waiting",
     OnlyWaitingDescr_1: "Shows only topics ", // MISSING changed "questions" to "topics"
     OnlyWaitingDescr_2: "waiting ",
     OnlyWaitingDescr_3: "for a solution or to be implemented and done",  // MISSING rewrote
@@ -528,7 +527,6 @@ var t_en_US: TalkyardTranslations = t = {
     _and: " and",
 
     repliesTo: "replies to",
-    dashInReplyTo: "— in reply to",
     InReplyTo: "In reply to",
 
     ClickViewEdits: "Click to view old edits",
