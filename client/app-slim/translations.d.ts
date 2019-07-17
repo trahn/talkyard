@@ -32,6 +32,7 @@ interface TalkyardTranslations {
   Cancel: string;
   Categories: string;
   Category: string;
+  ChangeV: string;
   ClickToShow: string;
   Continue: string;
   ChangeDots: string;
@@ -45,6 +46,8 @@ interface TalkyardTranslations {
   Deleted: string;
   DirectMessage: string;
   Discussion: string;
+  discussion: string;
+  done: string;
   EditV: string;
   Editing: string;
   EmailAddress: string;
@@ -52,6 +55,7 @@ interface TalkyardTranslations {
   EmailSentD: string;
   Forum: string;
   GetNotifiedAbout: string;
+  GroupsC: string;
   Hide: string;
   Home: string;
   Idea: string;
@@ -63,6 +67,8 @@ interface TalkyardTranslations {
   LoggedInAs: string;
   LogOut: string;
   Maybe: string;
+  Manage: string;
+  Members: string;
   MessageN: string;
   MoreDots: string;
   Move: string;
@@ -81,6 +87,7 @@ interface TalkyardTranslations {
   onePerLine: string;
   PreviewV: string;
   Problem: string;
+  progressN: string;
   Question: string;
   Recent: string;
   Remove: string;
@@ -96,6 +103,7 @@ interface TalkyardTranslations {
   SendMsg: string;
   SignUp: string;
   Solution: string;
+  started: string;
   Summary: string;
   Submit: string;
   Tools: string;
@@ -429,6 +437,29 @@ interface TalkyardTranslations {
     ClickToCopy: string;
   },
 
+
+  // Change page dialog
+  cpd: {
+    ClickToChange: string;
+    ClickToViewAnswer: string;
+    ViewAnswer: string;
+    ChangeStatusC: string;
+    ChangeCatC: string;
+    ChangeTopicTypeC: string;
+  },
+
+
+  // Page doing status, PageDoingStatus
+  pds: {
+    aQuestion: string;
+    hasAccptAns: string;
+    aProblem: string;
+    planToFix: string;
+    anIdea: string;
+    planToDo: string;
+  },
+
+
   // Discussion / non-chat page
   d: {
     ThisFormClosed_1: string;
@@ -454,21 +485,26 @@ interface TalkyardTranslations {
     TooltipQuestSolved: string;
     TooltipQuestUnsolved: string;
 
+    // RENAME 13? x "Tooltip..." below to "Status*", because now also used
+    // in the Change Page dialog (cpd: ).
+    // No, instead, move to  ts:  above?  "Topic status".
+
+    StatusDone: string;
     TooltipProblFixed: string;
     TooltipDone: string;
-    ClickStatusNew: string;
 
+    StatusStarted: string;
     TooltipFixing: string;
     TooltipImplementing: string;
-    ClickStatusDone: string;
 
+    StatusPlanned: string;
     TooltipProblPlanned: string;
     TooltipIdeaPlanned: string;
-    ClickStatusStarted: string;
 
+    StatusNew: string;
+    StatusNewDtl: string;
     TooltipUnsProbl: string;
     TooltipIdea: string;
-    ClickStatusPlanned: string;
 
     TooltipPersMsg: string;
     TooltipChat: string;
@@ -500,6 +536,16 @@ interface TalkyardTranslations {
     ClickViewEdits: string;
 
     By: string;
+
+    // Discussion ...
+    aboutThisIdea: string;
+    aboutThisProbl: string;
+
+    AddProgrNote: string;
+    // Progress ...
+    withThisIdea: string;
+    withThisProbl: string;
+    withThis: string;
   },
 
 
@@ -528,6 +574,7 @@ interface TalkyardTranslations {
     MoreNotfs: string;
     DismNotfs: string;
     ViewProfile: string;
+    ViewGroups: string;
     LogOut: string;
     UnhideHelp: string;
   },
@@ -553,6 +600,13 @@ interface TalkyardTranslations {
 
     Kbd_1: string;
     Kbd_2: string;
+  },
+
+
+  // Select users dialog
+  sud: {
+    SelectUsers: string;
+    AddUsers: string;
   },
 
 
@@ -746,6 +800,21 @@ interface TalkyardTranslations {
   },
 
 
+  // Group profile page
+  gpp: {
+    GroupMembers: string;
+    NoMembers: string;
+    MayNotListMembers: string;
+    AddMembers: string;
+    BuiltInCannotModify: string;
+    NumMembers: (num: number) => string;
+    YouAreMember: string;
+    CustomGroupsC: string;
+    BuiltInGroupsC: string;
+    DeleteGroup: string;
+  },
+
+
   // Create user dialog
   cud: {
     CreateUser: string;
@@ -866,6 +935,8 @@ interface TalkyardTranslations {
 
   // Editor
   e: {
+    SimilarTopicsC: string;
+
     //WritingSomethingWarning: string;
     UploadMaxOneFile: string;
     PleaseFinishPost: string;
@@ -961,6 +1032,13 @@ interface TalkyardTranslations {
     CannotType: string;
 
     LoadingDraftDots: string;
+    DraftUnchanged: string;
+    CannotSaveDraft: string;
+    DraftSaved: (nr: string | number) => string;
+    DraftDeleted: (nr: string | number) => string;
+    WillSaveDraft: (nr: string | number) => string;
+    SavingDraft: (nr: string | number) => string;
+    DeletingDraft: (nr: string | number) => string;
   },
 
 
@@ -1008,7 +1086,14 @@ interface TalkyardTranslations {
     NoInet: string;
     PlzRefr: string;
     RefrNow: string;
-  }
+  },
+
+
+  PostDeleted: (postNr: number) => string;
+  NoSuchPost: (postNr: number) => string;
+  NoPageHere: string;
+  GoBackToLastPage: string;
+
 }
 
 
