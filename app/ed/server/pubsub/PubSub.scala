@@ -350,6 +350,28 @@ class PubSubActor(val nginxHost: String, val globals: Globals) extends Actor {
 
         sendPublishRequest(patchMessage.siteId, userIds, "storePatch", patchMessage.json)
       case x =>
+        /*
+
+{"severity":"ERROR","context":{"reportLocation":{"filePath":"PubSub.scala","lineNumber":247,"functionName":"ed$server$pubsub$PubSubActor$$dontRestartIfException","className":"ed.server.pubsub.PubSubActor"}},
+"message":"Error in PubSub actor [TyEPUBCATCH]\njava.lang.UnsupportedOperationException: Not implemented: Publishing NewPageMessage [EsE4GPYU2]\n\t
+at com.debiki.core.Prelude$.unimplemented(Prelude.scala:114)\n\t
+at ed.server.pubsub.PubSubActor.publishStorePatchAndNotfs(PubSub.scala:353)\n\t
+at ed.server.pubsub.PubSubActor.ed$server$pubsub$PubSubActor$$dontRestartIfException(PubSub.scala:233)\n\t
+at ed.server.pubsub.PubSubActor$$anonfun$receive$1.applyOrElse(PubSub.scala:204)\n\t
+at akka.actor.Actor.aroundReceive(Actor.scala:517)\n\t
+at akka.actor.Actor.aroundReceive$(Actor.scala:515)\n\t
+at ed.server.pubsub.PubSubActor.aroundReceive(PubSub.scala:170)\n\t
+at akka.actor.ActorCell.receiveMessage(ActorCell.scala:592)\n\t
+at akka.actor.ActorCell.invoke(ActorCell.scala:561)\n\t
+at akka.dispatch.Mailbox.processMailbox(Mailbox.scala:258)\n\t
+at akka.dispatch.Mailbox.run(Mailbox.scala:225)\n\t
+at akka.dispatch.Mailbox.exec(Mailbox.scala:235)\n\t
+at akka.dispatch.forkjoin.ForkJoinTask.doExec(ForkJoinTask.java:260)\n\t
+at akka.dispatch.forkjoin.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)\n\t
+at akka.dispatch.forkjoin.ForkJoinPool.runWorker(ForkJoinPool.java:1979)\n\t
+at akka.dispatch.forkjoin.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)\n","serviceContext":{"service":"talkyard-app","version":"0.0.1"}}
+
+         */
         unimplemented(s"Publishing ${classNameOf(x)} [EsE4GPYU2]")  // BUG sometimes happens, harmless?
     }
   }

@@ -533,6 +533,66 @@ class RdbSiteTransaction(var siteId: SiteId, val daoFactory: RdbDaoFactory, val 
       dieIf(!oldMeta.pageType.mayChangeRole && oldMeta.pageType != newMeta.pageType,
         "EsE7KPW24", s"Trying to change page role from ${oldMeta.pageType} to ${newMeta.pageType}")
       dieIf(oldMeta.extImpId != newMeta.extImpId, "TyE305KBR", "Changing page extImpId not yet impl")
+      /*
+{"severity":"ERROR","context":{"reportLocation":{"filePath":"SafeActions.scala","lineNumber":210,"functionName":"ed$server$http$SafeActions$$internalError","className":"ed.server.http.SafeActions"}},
+"message":"Replying internal error to: POST //co......-fo.-br..ewr..-co...alkyard.net/-/save-page-ids-urls [DwE500REX]\njava.lang.RuntimeException: Changing page extImpId not yet impl [TyE305KBR]\n\t
+at com.debiki.core.Prelude$.die(Prelude.scala:138)\n\t
+at com.debiki.core.Prelude$.dieIf(Prelude.scala:152)\n\t
+at com.debiki.dao.rdb.RdbSiteTransaction.$anonfun$_updatePageMeta$1(RdbSiteTransaction.scala:535)\n\t
+at com.debiki.dao.rdb.RdbSiteTransaction.$anonfun$_updatePageMeta$1$adapted(RdbSiteTransaction.scala:532)\n\t
+at scala.Option.foreach(Option.scala:274)\n\t
+at com.debiki.dao.rdb.RdbSiteTransaction._updatePageMeta(RdbSiteTransaction.scala:532)\n\t
+at com.debiki.dao.rdb.RdbSiteTransaction.$anonfun$updatePageMetaImpl$1(RdbSiteTransaction.scala:524)\n\t
+at com.debiki.dao.rdb.RdbSiteTransaction.$anonfun$updatePageMetaImpl$1$adapted(RdbSiteTransaction.scala:516)\n\t
+at com.debiki.dao.rdb.RdbSiteTransaction.$anonfun$transactionCheckQuota$1(RdbSiteTransaction.scala:140)\n\t
+at scala.Option.foreach(Option.scala:274)\n\t
+at com.debiki.dao.rdb.RdbSiteTransaction.transactionCheckQuota(RdbSiteTransaction.scala:138)\n\t
+at com.debiki.dao.rdb.RdbSiteTransaction.updatePageMetaImpl(RdbSiteTransaction.scala:516)\n\t
+at com.debiki.core.SiteTransaction.updatePageMeta(SiteTransaction.scala:265)\n\t
+at com.debiki.core.SiteTransaction.updatePageMeta$(SiteTransaction.scala:262)\n\t
+at com.debiki.dao.rdb.RdbSiteTransaction.updatePageMeta(RdbSiteTransaction.scala:38)\n\t
+at controllers.PageController.$anonfun$savePageIdsUrls$10(PageController.scala:195)\n\t
+at controllers.PageController.$anonfun$savePageIdsUrls$10$adapted(PageController.scala:168)\n\t
+at debiki.dao.SiteDao.$anonfun$readWriteTransaction$2(SiteDao.scala:194)\n\t
+at com.debiki.core.DbDao2.readWriteSiteTransaction(DbDao2.scala:67)\n\t
+at debiki.dao.SiteDao.$anonfun$readWriteTransaction$1(SiteDao.scala:194)\n\t
+at debiki.dao.SiteDao$.synchronizeOnSiteId(SiteDao.scala:519)\n\t
+at debiki.dao.SiteDao.readWriteTransaction(SiteDao.scala:193)\n\t
+at controllers.PageController.$anonfun$savePageIdsUrls$1(PageController.scala:168)\n\t
+at scala.Function1.$anonfun$andThen$1(Function1.scala:57)\n\t
+at ed.server.http.PlainApiActions$$anon$1.runBlockIfAuthOk(PlainApiActions.scala:422)\n\t
+at ed.server.http.PlainApiActions$$anon$1.invokeBlockAuthViaCookie(PlainApiActions.scala:244)\n\t
+at ed.server.http.PlainApiActions$$anon$1.invokeBlock(PlainApiActions.scala:133)\n\t
+at ed.server.http.PlainApiActions$$anon$1.invokeBlock(PlainApiActions.scala:91)\n\t
+at play.api.mvc.ActionBuilder$$anon$10.apply(Action.scala:425)\n\t
+at ed.server.http.PlainApiActions$$anon$1.$anonfun$composeAction$1(PlainApiActions.scala:105)\n\t
+at ed.server.http.SafeActions$ExceptionAction$.invokeBlock(SafeActions.scala:115)\n\t
+at ed.server.http.SafeActions$ExceptionAction$.invokeBlock(SafeActions.scala:82)\n\t
+at play.api.mvc.ActionBuilder$$anon$10.apply(Action.scala:425)\n\t
+at play.api.mvc.Action.$anonfun$apply$2(Action.scala:97)\n\t
+at play.api.libs.streams.StrictAccumulator.$anonfun$mapFuture$4(Accumulator.scala:183)\n\t
+at scala.util.Try$.apply(Try.scala:213)\n\t
+at play.api.libs.streams.StrictAccumulator.$anonfun$mapFuture$3(Accumulator.scala:183)\n\t
+at scala.Function1.$anonfun$andThen$1(Function1.scala:57)\n\t
+at scala.Function1.$anonfun$andThen$1(Function1.scala:57)\n\t
+at play.api.libs.streams.StrictAccumulator.run(Accumulator.scala:222)\n\t
+at play.core.server.AkkaHttpServer.$anonfun$runAction$4(AkkaHttpServer.scala:427)\n\t
+at akka.http.scaladsl.util.FastFuture$.strictTransform$1(FastFuture.scala:41)\n\t
+at akka.http.scaladsl.util.FastFuture$.$anonfun$transformWith$3(FastFuture.scala:51)\n\t
+at scala.concurrent.impl.CallbackRunnable.run(Promise.scala:64)\n\t
+at akka.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:55)\n\t
+at akka.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:91)\n\t
+at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)\n\t
+at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:85)\n\t
+at akka.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:91)\n\t
+at akka.dispatch.TaskInvocation.run(AbstractDispatcher.scala:40)\n\t
+at akka.dispatch.ForkJoinExecutorConfigurator$AkkaForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:44)\n\t
+at akka.dispatch.forkjoin.ForkJoinTask.doExec(ForkJoinTask.java:260)\n\t
+at akka.dispatch.forkjoin.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)\n\t
+at akka.dispatch.forkjoin.ForkJoinPool.runWorker(ForkJoinPool.java:1979)\n\t
+at akka.dispatch.forkjoin.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)\n","serviceContext":{"service":"talkyard-app","version":"0.0.1"}}
+
+       */
     }
 
     // Dulp code, see the insert query [5RKS025].

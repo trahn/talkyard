@@ -385,7 +385,61 @@ case class Post(   // [exp] ok use
   require(approvedRevisionNr.isEmpty == approvedSource.isEmpty, "DwE7YFv2")
   require(approvedHtmlSanitized.isEmpty || approvedSource.isDefined, "DwE0IEW1") //?why not == .isEmpty
 
-  require(approvedSource.map(_.trim.length) != Some(0), "DwE1JY83")
+  require(approvedSource.map(_.trim.length) != Some(0), "DwE1JY83")  // oops
+/*
+
+{"severity":"ERROR","context":{"reportLocation":{"filePath":"SafeActions.scala","lineNumber":210,"functionName":"ed$server$http$SafeActions$$internalError","className":"ed.server.http.SafeActions"}},"message":"Replying internal error to: POST //....ents-fo..cona...-i....lkyard.net/-/save-special-content [DwE500REX]\njava.lang.IllegalArgumentException: requirement failed: DwE1JY83\n\t
+at scala.Predef$.require(Predef.scala:281)\n\t
+at com.debiki.core.Post.<init>(Post.scala:388)\n\t
+at com.debiki.core.Post.copy(Post.scala:359)\n\t
+at debiki.dao.SpecialContentDao.updateSpecialContentPage(SpecialContentDao.scala:148)\n\t
+at debiki.dao.SpecialContentDao.updateSpecialContentPage$(SpecialContentDao.scala:139)\n\t
+at debiki.dao.SiteDao.updateSpecialContentPage(SiteDao.scala:83)\n\t
+at debiki.dao.SpecialContentDao.$anonfun$saveSpecialContent$2(SpecialContentDao.scala:102)\n\t
+at debiki.dao.SpecialContentDao.$anonfun$saveSpecialContent$2$adapted(SpecialContentDao.scala:82)\n\t
+at debiki.dao.SiteDao.$anonfun$readWriteTransaction$2(SiteDao.scala:194)\n\t
+at com.debiki.core.DbDao2.readWriteSiteTransaction(DbDao2.scala:67)\n\t
+at debiki.dao.SiteDao.$anonfun$readWriteTransaction$1(SiteDao.scala:194)\n\t
+at debiki.dao.SiteDao$.synchronizeOnSiteId(SiteDao.scala:519)\n\t
+at debiki.dao.SiteDao.readWriteTransaction(SiteDao.scala:193)\n\t
+at debiki.dao.SpecialContentDao.saveSpecialContent(SpecialContentDao.scala:82)\n\t
+at debiki.dao.SpecialContentDao.saveSpecialContent$(SpecialContentDao.scala:62)\n\t
+at debiki.dao.SiteDao.saveSpecialContent(SiteDao.scala:83)\n\t
+at controllers.SpecialContentController.$anonfun$saveContent$1(SpecialContentController.scala:80)\n\t
+at scala.Function1.$anonfun$andThen$1(Function1.scala:57)\n\t
+at ed.server.http.PlainApiActions$$anon$1.runBlockIfAuthOk(PlainApiActions.scala:422)\n\t
+at ed.server.http.PlainApiActions$$anon$1.invokeBlockAuthViaCookie(PlainApiActions.scala:244)\n\t
+at ed.server.http.PlainApiActions$$anon$1.invokeBlock(PlainApiActions.scala:133)\n\t
+at ed.server.http.PlainApiActions$$anon$1.invokeBlock(PlainApiActions.scala:91)\n\t
+at play.api.mvc.ActionBuilder$$anon$10.apply(Action.scala:425)\n\t
+at ed.server.http.PlainApiActions$$anon$1.$anonfun$composeAction$1(PlainApiActions.scala:105)\n\t
+at ed.server.http.SafeActions$ExceptionAction$.invokeBlock(SafeActions.scala:115)\n\t
+at ed.server.http.SafeActions$ExceptionAction$.invokeBlock(SafeActions.scala:82)\n\t
+at play.api.mvc.ActionBuilder$$anon$10.apply(Action.scala:425)\n\t
+at play.api.mvc.Action.$anonfun$apply$2(Action.scala:97)\n\t
+at play.api.libs.streams.StrictAccumulator.$anonfun$mapFuture$4(Accumulator.scala:183)\n\t
+at scala.util.Try$.apply(Try.scala:213)\n\t
+at play.api.libs.streams.StrictAccumulator.$anonfun$mapFuture$3(Accumulator.scala:183)\n\t
+at scala.Function1.$anonfun$andThen$1(Function1.scala:57)\n\t
+at scala.Function1.$anonfun$andThen$1(Function1.scala:57)\n\t
+at play.api.libs.streams.StrictAccumulator.run(Accumulator.scala:222)\n\t
+at play.core.server.AkkaHttpServer.$anonfun$runAction$4(AkkaHttpServer.scala:427)\n\t
+at akka.http.scaladsl.util.FastFuture$.strictTransform$1(FastFuture.scala:41)\n\t
+at akka.http.scaladsl.util.FastFuture$.$anonfun$transformWith$3(FastFuture.scala:51)\n\t
+at scala.concurrent.impl.CallbackRunnable.run(Promise.scala:64)\n\t
+at akka.dispatch.BatchingExecutor$AbstractBatch.processBatch(BatchingExecutor.scala:55)\n\t
+at akka.dispatch.BatchingExecutor$BlockableBatch.$anonfun$run$1(BatchingExecutor.scala:91)\n\t
+at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)\n\t
+at scala.concurrent.BlockContext$.withBlockContext(BlockContext.scala:85)\n\t
+at akka.dispatch.BatchingExecutor$BlockableBatch.run(BatchingExecutor.scala:91)\n\t
+at akka.dispatch.TaskInvocation.run(AbstractDispatcher.scala:40)\n\t
+at akka.dispatch.ForkJoinExecutorConfigurator$AkkaForkJoinTask.exec(ForkJoinExecutorConfigurator.scala:44)\n\t
+at akka.dispatch.forkjoin.ForkJoinTask.doExec(ForkJoinTask.java:260)\n\t
+at akka.dispatch.forkjoin.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)\n\t
+at akka.dispatch.forkjoin.ForkJoinPool.runWorker(ForkJoinPool.java:1979)\n\t
+at akka.dispatch.forkjoin.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)\n","serviceContext":{"service":"talkyard-app","version":"0.0.1"}}
+
+  */
   require(approvedHtmlSanitized.map(_.trim.length) != Some(0), "DwE6BH5")
   require(approvedSource.isDefined || currentRevSourcePatch.isDefined, "DwE3KI59")  // [40HKTPJ]
   require(currentRevSourcePatch.map(_.trim.length) != Some(0), "DwE2bNW5")

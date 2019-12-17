@@ -1536,8 +1536,69 @@ trait PostsDao {
     var numNewVisibleOpReplies = 0
 
     for (post <- posts) {
-      dieIf(post.isSomeVersionApproved, "EsE6YKP2", s"Post ${post.pagePostId} already approved")
+      dieIf(post.isSomeVersionApproved,
+        "EsE6YKP2", s"s$siteId: Post ${post.pagePostId} already approved")
+      /*
+at Ty.io:
 
+app_1     | {"severity":"TRACE","message":"s3: Mem cache: Removing: 67|PageMetaById"}
+app_1     | {"severity":"ERROR","context":{"reportLocation":{"filePath":"Janitor.scala","lineNumber":91,"functionName":"applyOrElse","className":"ed.server.jobs.JanitorActor$$anonfun$receive$1"}},"message":"Error executing review tasks [TyE52QBU05]\njava.lang.RuntimeException: Post PagePostId(31,3207) already approved [EsE6YKP2]\n\t
+at com.debiki.core.Prelude$.die(Prelude.scala:138)\n\t
+at com.debiki.core.Prelude$.dieIf(Prelude.scala:152)\n\t
+at debiki.dao.PostsDao.$anonfun$autoApprovePendingEarlyPosts$3(PostsDao.scala:1539)\n\t
+at debiki.dao.PostsDao.$anonfun$autoApprovePendingEarlyPosts$3$adapted(PostsDao.scala:1538)\n\t
+at scala.collection.immutable.List.foreach(List.scala:392)\n\t
+at debiki.dao.PostsDao.autoApprovePendingEarlyPosts(PostsDao.scala:1538)\n\t
+at debiki.dao.PostsDao.autoApprovePendingEarlyPosts$(PostsDao.scala:1526)\n\t
+at debiki.dao.SiteDao.autoApprovePendingEarlyPosts(SiteDao.scala:86)\n\t
+at debiki.dao.ReviewsDao.$anonfun$perhapsCascadeApproval$11(ReviewsDao.scala:374)\n\t
+at debiki.dao.ReviewsDao.$anonfun$perhapsCascadeApproval$11$adapted(ReviewsDao.scala:372)\n\t
+at scala.collection.TraversableLike$WithFilter.$anonfun$foreach$1(TraversableLike.scala:792)\n\t
+at scala.collection.immutable.Map$Map1.foreach(Map.scala:128)\n\t
+at scala.collection.TraversableLike$WithFilter.foreach(TraversableLike.scala:791)\n\t
+at debiki.dao.ReviewsDao.perhapsCascadeApproval(ReviewsDao.scala:372)\n\t
+at debiki.dao.ReviewsDao.$anonfun$carryOutReviewDecision$9(ReviewsDao.scala:212)\n\t
+at scala.runtime.java8.JFunction1$mcVI$sp.apply(JFunction1$mcVI$sp.java:23)\n\t
+at scala.Option.foreach(Option.scala:274)\n\t
+at debiki.dao.ReviewsDao.$anonfun$carryOutReviewDecision$1(ReviewsDao.scala:174)\n\t
+at debiki.dao.ReviewsDao.$anonfun$carryOutReviewDecision$1$adapted(ReviewsDao.scala:149)\n\t
+at debiki.dao.SiteDao.$anonfun$readWriteTransaction$2(SiteDao.scala:197)\n\t
+at com.debiki.core.DbDao2.readWriteSiteTransaction(DbDao2.scala:67)\n\t
+at debiki.dao.SiteDao.$anonfun$readWriteTransaction$1(SiteDao.scala:197)\n\t
+at debiki.dao.SiteDao$.synchronizeOnSiteId(SiteDao.scala:541)\n\t
+at debiki.dao.SiteDao.readWriteTransaction(SiteDao.scala:196)\n\t
+at debiki.dao.ReviewsDao.carryOutReviewDecision(ReviewsDao.scala:149)\n\t
+at debiki.dao.ReviewsDao.carryOutReviewDecision$(ReviewsDao.scala:146)\n\t
+at debiki.dao.SiteDao.carryOutReviewDecision(SiteDao.scala:86)\n\t
+at debiki.dao.SystemDao.$anonfun$executePendingReviewTasks$3(SystemDao.scala:587)\n\t
+at scala.runtime.java8.JFunction1$mcVI$sp.apply(JFunction1$mcVI$sp.java:23)\n\t
+at scala.collection.Iterator.foreach(Iterator.scala:941)\n\t
+at scala.collection.Iterator.foreach$(Iterator.scala:941)\n\t
+at scala.collection.AbstractIterator.foreach(Iterator.scala:1429)\n\t
+at scala.collection.IterableLike.foreach(IterableLike.scala:74)\n\t
+at scala.collection.IterableLike.foreach$(IterableLike.scala:73)\n\t
+at scala.collection.AbstractIterable.foreach(Iterable.scala:56)\n\t
+at debiki.dao.SystemDao.$anonfun$executePendingReviewTasks$2(SystemDao.scala:584)\n\t
+at debiki.dao.SystemDao.$anonfun$executePendingReviewTasks$2$adapted(SystemDao.scala:582)\n\t
+at scala.collection.immutable.HashMap$HashMap1.foreach(HashMap.scala:234)\n\t
+at debiki.dao.SystemDao.executePendingReviewTasks(SystemDao.scala:582)\n\t
+at ed.server.jobs.JanitorActor.ed$server$jobs$JanitorActor$$executePendingReviewTasks(Janitor.scala:106)\n\t
+at ed.server.jobs.JanitorActor$$anonfun$receive$1.applyOrElse(Janitor.scala:86)\n\t
+at akka.actor.Actor.aroundReceive(Actor.scala:517)\n\t
+at akka.actor.Actor.aroundReceive$(Actor.scala:515)\n\t
+at ed.server.jobs.JanitorActor.aroundReceive(Janitor.scala:72)\n\t
+at akka.actor.ActorCell.receiveMessage(ActorCell.scala:592)\n\t
+at akka.actor.ActorCell.invoke(ActorCell.scala:561)\n\t
+at akka.dispatch.Mailbox.processMailbox(Mailbox.scala:258)\n\t
+at akka.dispatch.Mailbox.run(Mailbox.scala:225)\n\t
+at akka.dispatch.Mailbox.exec(Mailbox.scala:235)\n\t
+at akka.dispatch.forkjoin.ForkJoinTask.doExec(ForkJoinTask.java:260)\n\t
+at akka.dispatch.forkjoin.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)\n\t
+at akka.dispatch.forkjoin.ForkJoinPool.runWorker(ForkJoinPool.java:1979)\n\t
+at akka.dispatch.forkjoin.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)\n","serviceContext":{"service":"talkyard-app","version":"0.0.1"}}
+app_1     | {"severity":"DEBUG","message":"Background rendering site 3, page 67, None... [TyMBGRSTART]"}
+
+      */
       numNewVisibleReplies += post.isReply ? 1 | 0
       numNewVisibleOpReplies += post.isOrigPostReply ? 1 | 0
 
