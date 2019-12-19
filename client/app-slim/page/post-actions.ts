@@ -77,8 +77,18 @@ export const NoCommentsPageActions = createComponent({
     if (!me.isAdmin)
       return null;
 
+    // Dupl code [305RKTDJ2]
+    const myPageData: MyPageData = me.myCurrentPageData;
+    const anyEditsDraft = _.find(myPageData.myDrafts, (d: Draft) => {
+      return d.forWhat.postId === post.uniqueId && 
+          d.forWhat.draftType === DraftType.Edit;
+    });
+    const unfinEditsClass = anyEditsDraft ? ' s_UnfinEd' : '';
+
     const actions =
-          r.a({ className: 'dw-a dw-a-edit icon-edit', onClick: this.onEditClick }, t.EditV);
+        r.a({ className: 'dw-a dw-a-edit icon-edit' + unfinEditsClass, onClick: this.onEditClick },
+          t.EditV + (
+            anyEditsDraft ? " — Unfinished edits" : null));  // I18N [0436BKRFP2]
 
     return (
       r.div({ className: 'dw-p-as dw-as' }, actions));
@@ -177,9 +187,8 @@ export const PostActions = createComponent({
 
     login.loginIfNeededReturnToPost(loginToWhat, post.nr, () => {
       if (this.isGone) return;
-      // Toggle highlighting first, because it'll be cleared later if the
-      // editor is closed, and then we don't want to toggle it afterwards.
-      const inclInReply = $h.toggleClass(eventTarget, 'dw-replying');
+
+      const inclInReply = true; // old, legacy
 
       // Dupl code [5AKBR30W02]
       if (eds.isInEmbeddedCommentsIframe) {
@@ -241,6 +250,18 @@ export const PostActions = createComponent({
 
     const deletedOrCollapsed = isDeleted || isCollapsed;
 
+    if (post.nr < MinRealPostNr) {
+      // This is a preview of a new reply; it doesn't yet exist for real, there's nothing
+      // we can do with it.
+      // @ifdef DEBUG
+      dieIf(!post.isPreview, 'TyE396KRTTF2J');
+      // @endif
+      return null;
+    }
+
+    const isEditingThisPost = post.isEditing;
+    const isEditorOpenAlready = store.isEditorOpen;
+
     // (Do return a <div> so there'll be some whitespace below for arrows to any replies.)
     if (post_shallRenderAsDeleted(post) || isCollapsed)
       return r.div({ className: 'dw-p-as dw-as' });
@@ -266,12 +287,14 @@ export const PostActions = createComponent({
         t.Solution);
     }
 
-    const replyButton = !store_mayIReply(store, post) ? null :
+    // (Previously, added a class .dw-replying [395QKTJR03] to the Reply button one
+    // had clicked — but now, with reply previews, no longer needed?)
+    const replyButton = !store_mayIReply(store, post) || isEditorOpenAlready ? null :
           r.a({ className: 'dw-a dw-a-reply ' + makeReplyBtnIcon(store),
               onClick: this.onReplyClick },
             makeReplyBtnTitle(store, post));
 
-    const changeButton = !isStaffOrOwnPage || !isPageBody ? null :
+    const changeButton = !isStaffOrOwnPage || !isPageBody || isEditingThisPost ? null :
           r.a({ className: 'dw-a dw-a-change',
               onClick: event => {
                 const rect = cloneEventTargetRect(event);
@@ -312,7 +335,10 @@ export const PostActions = createComponent({
 
     let downvotesDropdown;
     let likeVoteButton;
-    if (!deletedOrCollapsed && post.isApproved && !isOwnPost) {
+    if (!deletedOrCollapsed && post.isApproved && !isOwnPost &&
+        // Don't allow voting whilst editing — that currently would replace the
+        // edit preview post [EDPVWPST] with the real post.
+        !isEditingThisPost) {
       const myLikeVote = votes.indexOf('VoteLike') !== -1 ? ' dw-my-vote' : '';
       const myWrongVote = votes.indexOf('VoteWrong') !== -1 ? ' dw-my-vote' : '';
       const myBuryVote = votes.indexOf('VoteBury') !== -1 ? ' dw-my-vote' : '';
@@ -332,10 +358,18 @@ export const PostActions = createComponent({
     }
 
 
+    // Dupl code [305RKTDJ2]
+    const anyEditsDraft = _.find(myPageData.myDrafts, (d: Draft) => {
+      return d.forWhat.postId === post.uniqueId && 
+          d.forWhat.draftType === DraftType.Edit;
+    });
+    const unfinEditsClass = anyEditsDraft ? ' s_UnfinEd' : '';
+
     const mayEdit = store_mayIEditPost(store, post);
-    const editButton = !mayEdit ? null :
-        r.a({ className: 'dw-a dw-a-edit icon-edit', title: t.EditV,
-              onClick: this.onEditClick });
+    const editButton = !mayEdit || isEditorOpenAlready ? null :
+        r.a({ className: 'dw-a dw-a-edit icon-edit' + unfinEditsClass, title: t.EditV,
+              onClick: this.onEditClick },
+          anyEditsDraft ? "Unfinished edits" : null);  // I18N [0436BKRFP2] [UFINEDT]
 
     const link =
         r.a({ className: 'dw-a dw-a-link icon-link', title: t.pa.LinkToPost,
@@ -347,7 +381,11 @@ export const PostActions = createComponent({
     // when merging server and client side markup).
     let flagBtn;
     let moreDropdown;
-    if (me.isLoggedIn) {
+    if (isEditingThisPost) {
+      // Skip the Flag and More buttons — doing such things when the post is being
+      // edited, could have weird effects?
+    }
+    else if (me.isLoggedIn) {
       moreDropdown =
         r.span({className: 'dropdown navbar-right', onClick: this.openMoreDropdown},
           r.a({className: 'dw-a dw-a-more icon-menu', title: t.MoreDots}));

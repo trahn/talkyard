@@ -87,9 +87,8 @@ export function loadMyself(afterwardsCallback?) {
       const mainWin = getMainWin();
       const typs: PageSession = mainWin.typs;
       const weakSessionId = typs.weakSessionId;
-      window.parent.postMessage(JSON.stringify([
-        'justLoggedIn', { user, weakSessionId, pubSiteId: eds.pubSiteId }]),  // [JLGDIN]
-        eds.embeddingOrigin);
+      sendToCommentsIframe([
+        'justLoggedIn', { user, weakSessionId, pubSiteId: eds.pubSiteId }]);  // [JLGDIN]
     }
     setNewMe(user);
     if (afterwardsCallback) {
@@ -123,10 +122,15 @@ export function logoutClientSideOnly() {
   ReactDispatcher.handleViewAction({
     actionType: actionTypes.Logout
   });
+
   if (eds.isInEmbeddedCommentsIframe) {
     // Tell the editor iframe that we've logged out.
-    window.parent.postMessage(JSON.stringify(['logoutClientSideOnly', null]), eds.embeddingOrigin);
+    sendToEditorIframe(['logoutClientSideOnly', null]);
+
+    // Probaby not needed, since reload() below, but anyway:
+    ReactActions.patchTheStore({ setEditorOpen: false });
   }
+
   // Abort any long polling request, so we won't receive data, for this user, after we've
   // logged out: (not really needed, because we reload() below)
   Server.abortAnyLongPollingRequest();
@@ -522,8 +526,7 @@ export function doUrlFragmentAction(newHashFragment?: string) {
         // CLEAN_UP Dupl code [5AKBR30W02]
         // Break out debiki2.ReactActions.editReplyTo(postNr)  action?
         if (eds.isInEmbeddedCommentsIframe) {
-          window.parent.postMessage(
-              JSON.stringify(['editorToggleReply', [postNr, true]]), eds.embeddingOrigin);
+          sendToEditorIframe(['editorToggleReply', [postNr, true]]);
         }
         else {
           // Normal = incl in draft + url?
@@ -589,6 +592,13 @@ export function findUrlFragmentAction(hashFragment?: string): FragAction | undef
       type: FragActionType.ComposeDirectMessage,
       topicType: PageRole.FormalMessage,
       draftNr,
+    };
+  }
+
+  if (theHashFrag.indexOf(FragActionHashScrollToBottom) >= 0) {
+    return {
+      type: FragActionType.ScrollToElemId,
+      elemId: '.s_APAs',
     };
   }
 
@@ -752,10 +762,251 @@ function markAnyNotificationAsSeen(postNr: number) {
 }
 
 
-export function patchTheStore(storePatch: StorePatch) {
+export function resumeDraft(post: Post) {
+  // Dupl code [5AKBR30W02]
+  const inclInReply = true;
+  if (eds.isInEmbeddedCommentsIframe) {
+    sendToEditorIframe(['editorToggleReply', [post.parentNr, inclInReply, post.postType]]);
+  }
+  else {
+    debiki2.editor.toggleWriteReplyToPostNr(post.parentNr, inclInReply, post.postType);
+  }
+}
+
+
+export function onEditorOpen(onDone: () => void) {
+  // @ifdef DEBUG
+  // Use messages 'editorToggleReply' or 'editorEditPost' instead.
+  dieIf(eds.isInEmbeddedCommentsIframe, 'Ty305WKHE3');
+  // @endif
+
+  if (eds.isInEmbeddedEditor) {
+    sendToCommentsIframe(['showEditor', {}]);
+  }
+
+  ReactActions.patchTheStore({ setEditorOpen: true }, onDone);
+}
+
+
+let origPostBeforeEdits: Post | undefined;
+
+
+export function showEditsPreview(ps: ShowEditsPreviewParams) {
+  // @ifdef DEBUG
+  dieIf(ps.replyToNr && ps.editingPostNr, 'TyE73KGTD02');
+  dieIf(ps.replyToNr && !ps.anyPostType, 'TyE502KGSTJ46');
+  // @endif
+
+  if (eds.isInEmbeddedEditor) {
+    const editorIframeHeightPx = window.innerHeight;
+    sendToCommentsIframe(['showEditsPreview', { ...ps, editorIframeHeightPx }]);
+    return;
+  }
+
+  const store: Store = ReactStore.allData();
+  const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
+
+  // @ifdef DEBUG
+  dieIf(!page, 'TyE3930KRG');
+  // @endif
+
+  if (!page)
+    return;
+
+  const isChat = page_isChatChannel(page.pageRole);
+
+  // A bit dupl debug checks (49307558).
+  // @ifdef DEBUG
+  // Chat messages don't reply to any particular post — has no parent nr. [CHATPRNT]
+  dieIf(ps.replyToNr && isChat, 'TyE7WKJTGJ024');
+  // The embedded comments editor doesn't include any page id when sending the
+  // showEditsPreview message — it doesn't know which page we're looking at.
+  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe &&
+      !isChat && location.pathname.indexOf(ApiUrlPathPrefix) === -1, 'TyE630KPR5');
+  // @endif
+
+  let patch: StorePatch;
+
+  if (ps.editingPostNr) {
+    // Replace the real post with a copy that includes the edited html. [EDPVWPST]
+    const postToEdit = page.postsByNr[ps.editingPostNr];
+    if (!origPostBeforeEdits) {
+      origPostBeforeEdits = postToEdit;
+    }
+    patch = store_makeEditsPreviewPatch(store, page, postToEdit, ps.safeHtml);
+  }
+  else if (ps.replyToNr || isChat) {
+    const postType = ps.anyPostType || PostType.ChatMessage;
+    // Show an inline preview, where the reply will appear.
+    patch = store_makeNewPostPreviewPatch(
+        store, page, ps.replyToNr, ps.safeHtml, postType);
+  }
+
+  // @ifdef DEBUG
+  dieIf(!patch, 'TyE5WKDAW25');
+  // @endif
+
+  if (patch) {
+    ReactActions.patchTheStore(patch, () => {
+      if (ps.scrollToPreview) {
+        scrollToPreview({
+          isChat,
+          isEditingBody: ps.editingPostNr === BodyNr,
+          editorIframeHeightPx: ps.editorIframeHeightPx,
+        });
+      }
+    });
+  }
+}
+
+
+export function scrollToPreview(ps: {
+        isChat?: boolean,
+        isEditingBody?: boolean,
+        editorIframeHeightPx?: number } = {}) {
+
+  if (eds.isInEmbeddedEditor) {
+    const editorIframeHeightPx = window.innerHeight;
+    sendToCommentsIframe(['scrollToPreview', { ...ps, editorIframeHeightPx }]);
+    return;
+  }
+
+  // The preview won't appear until a bit later, after the preview post
+  // store patch has been applied. But how know when that has happened? [SCROLLPRVW]
+
+  // Break out function? Also see FragActionHashScrollToBottom, tiny bit dupl code.
+  // Scroll to the preview we're currently editing (not to any inactive draft previews).
+  const selector = ps.isEditingBody ? '.dw-ar-t > .s_T_YourPrvw' : (
+    ps.isChat ? '.s_T_YourPrvw + .esC_M' : '.s_T-Prvw-IsEd');
+
+  // If editing body, use some more margin, so the page title and "By (author)"
+  // stays visible — and, in a chat, so that the "Preview:" text is visible
+  // (it's not included in `selector`).
+  const marginTop = ps.isEditingBody || ps.isChat ? 110 : 50;
+
+  // If we're in an embedded comments iframe, then, there's another iframe for the
+  // editor. Then scroll a bit more, so that other iframe won't occlude the preview.
+  let editorHeight = ps.editorIframeHeightPx || 0;
+
+  // Or, if we're in a chat, there's a chat text box at the bottom, on top of
+  // the chat messages.
+  if (ps.isChat) {
+    // @ifdef DEBUG
+    dieIf(editorHeight !== 0, 'TyE406KWSDJS23');
+    // @endif
+    const editorElem = $first('.esC_Edtr');
+    editorHeight = editorElem?.clientHeight || 0;
+  }
+
+  utils.scrollIntoViewInPageColumn(selector, {
+    marginTop,
+    marginBottom: 30 + editorHeight,
+  });
+}
+
+
+export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
+  // @ifdef DEBUG
+  dieIf(ps.replyToNr && ps.editingPostNr, 'TyE4KTJW035M');
+  dieIf(ps.replyToNr && !ps.anyPostType, 'TyE72SKJRW46');
+  // @endif
+
+  if (eds.isInEmbeddedEditor) {
+    sendToCommentsIframe(['hideEditorAndPreview', ps]);
+    ReactActions.patchTheStore({ setEditorOpen: false });
+    return;
+  }
+
+  const store: Store = ReactStore.allData();
+  const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
+  const isChat = page && page_isChatChannel(page.pageRole);
+
+  // A bit dupl debug checks (49307558).
+  // @ifdef DEBUG
+  dieIf(!page, 'TyE407AKSHPW24');
+  // @endif
+  // @ifdef DEBUG
+  dieIf(ps.replyToNr && isChat, 'TyE62SKHSW604');
+  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe &&
+      !isChat && location.pathname.indexOf(ApiUrlPathPrefix) === -1, 'TyE6QSADTH04');
+  // @endif
+
+  let patch: StorePatch = {};
+  let highlightPostNrAfter: PostNr;
+
+  if (ps.keepPreview) {
+    // Thsi happens if we're editing a chat message — then we can continue typing
+    // in the cat message text box.
+  }
+  else if (ps.editingPostNr) {
+    if (origPostBeforeEdits) {
+      highlightPostNrAfter = origPostBeforeEdits.nr;
+      patch = {
+        pageVersionsByPageId: {},
+        postsByPageId: {},
+      };
+      patch.postsByPageId[page.pageId] = [origPostBeforeEdits];
+      patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
+      origPostBeforeEdits = null;
+    }
+  }
+  else if (ps.replyToNr || isChat) {
+    const postType = ps.anyPostType || PostType.ChatMessage;
+    patch = ps.anyDraft && ps.keepDraft
+        ? store_makeDraftPostPatch(store, page, ps.anyDraft)
+        : store_makeDeletePreviewPatch(store, ps.replyToNr, postType);
+    highlightPostNrAfter = post_makePreviewIdNr(ps.replyToNr, postType);
+  }
+
+  patch = { ...patch, setEditorOpen: false };
+  ReactActions.patchTheStore(patch);
+
+  // And then, later:
+  setTimeout(() => {
+    highlightPostNrBrieflyIfThere(highlightPostNrAfter);
+  }, 200);
+}
+
+
+export function saveReply(postNrs: PostNr[], text: string, anyPostType: number,
+      draftToDelete: Draft | undefined, onDone?: () => void) {
+  Server.saveReply(postNrs, text, anyPostType, draftToDelete?.draftNr, (storePatch) => {
+    handleReplyResult(storePatch, draftToDelete, onDone);
+  });
+}
+
+
+export function insertChatMessage(text: string, draftToDelete: Draft | undefined,
+      onDone?: () => void) {
+  Server.insertChatMessage(text, draftToDelete?.draftNr, (storePatch) => {
+    handleReplyResult(storePatch, draftToDelete, onDone);
+  });
+}
+
+
+export function handleReplyResult(patch: StorePatch, draftToDelete: Draft | undefined,
+      onDone?: () => void) {
+  if (eds.isInEmbeddedEditor) {
+    if (patch.newlyCreatedPageId) {
+      // Update this, so subsequent server requests, will use the correct page id. [4HKW28]
+      eds.embeddedPageId = patch.newlyCreatedPageId;
+    }
+    // Send a message to the embedding page, which will forward it to
+    // the comments iframe, which will show the new comment.
+    sendToCommentsIframe(['handleReplyResult', [patch, draftToDelete]]);
+    onDone?.();
+    return;
+  }
+
+  debiki2.ReactActions.patchTheStore({ ...patch, deleteDraft: draftToDelete }, onDone);
+}
+
+
+export function patchTheStore(storePatch: StorePatch, onDone?: () => void) {
   ReactDispatcher.handleViewAction({
     actionType: actionTypes.PatchTheStore,
-    storePatch: storePatch,
+    storePatch,
+    onDone,
   });
 }
 

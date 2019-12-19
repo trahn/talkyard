@@ -115,6 +115,7 @@ export function makeNoPageData(): MyPageData {
   return {
     dbgSrc: 'MyNP',
     pageId: EmptyPageId,
+    myDrafts: <Draft[]> [],
     myPageNotfPref: <PageNotfPref> undefined,
     groupsPageNotfPrefs: <PageNotfPref[]> [],
     votes: {},
@@ -408,6 +409,10 @@ ReactDispatcher.register(function(payload) {
       return true;
   }
 
+  if (store.cannotQuickUpdate) {
+    resetQuickUpdateInPlace(store);
+  }
+
   ReactStore.emitChange();   // old, for non-hooks based code ...
 
   // Ensure new hooks based code cannot 'cheat' by updating things in-place:
@@ -422,12 +427,25 @@ ReactDispatcher.register(function(payload) {
     setStore(storeCopy);
   });
 
-  store.quickUpdate = false;
-  store.postsToUpdate = {};
+  resetQuickUpdateInPlace(store);
+
+  // How can one know when React is done with all updates scheduled above?
+  // (Would need to look into how emitChange() and the hook fns work?)
+  // Some code wants to run afterwards: [SCROLLPRVW]. For now though:
+  if (action.onDone) {
+    setTimeout(action.onDone, 1);
+  }
 
   // Tell the dispatcher that there were no errors:
   return true;
 });
+
+
+function resetQuickUpdateInPlace(st: Store) {
+  st.quickUpdate = false;
+  st.postsToUpdate = {};
+  delete st.cannotQuickUpdate;
+}
 
 
 ReactStore.initialize = function() {
@@ -497,9 +515,29 @@ ReactStore.activateMyself = function(anyNewMe: Myself) {
     me.marksByPostId = _.clone(myPageData.marksByPostId);
   }
 
+  addLocalStorageDataTo(anyNewMe || store.me);
+
+  // Show one's drafts: Create a preview post, for each new post draft (but not
+  // for edit drafts — then, we instead show a text "Unfinished edits" next to the
+  // edit button. [UFINEDT])
+  // (Do this also if not logged in — because there might still be drafts in one's
+  // browser local sessionStorage.)
+  // Skip chats though — any chat message draft is shown directly in the chat
+  // message text input box. [CHATPRVW]
+  if (!eds.isInEmbeddedEditor && !page_isChatChannel(store.currentPage?.pageRole)) {
+    _.each(myPageData.myDrafts, (draft: Draft) => {
+      const draftType = draft.forWhat.draftType;
+      if (draftType === DraftType.Reply || draftType === DraftType.ProgressPost) {
+        const post: Post | null = store_makePostForDraft(store, draft);
+        if (post) {
+          updatePost(post, store.currentPageId);
+        }
+        // COULD_FREE_MEM
+      }
+    });
+  }
+
   if (!anyNewMe) {
-    // For now only. Later on, this data should be kept server side instead?
-    addLocalStorageDataTo(store.me);
     debiki2.pubsub.subscribeToServerEvents(store.me);
     this.emitChange();
     return;
@@ -542,7 +580,7 @@ ReactStore.activateMyself = function(anyNewMe: Myself) {
 
   store.user = newMe; // try to remove the .user field, use .me instead
   store.me = newMe;
-  addLocalStorageDataTo(store.me);
+
   theStore_addOnlineUser(me_toBriefUser(newMe));
 
   watchbar_markAsRead(store.me.watchbar, store.currentPageId);
@@ -550,7 +588,7 @@ ReactStore.activateMyself = function(anyNewMe: Myself) {
   // Show the user's own unapproved posts, or all, for admins.
   _.each(myPageData.unapprovedPosts, (post: Post) => {
     updatePost(post, store.currentPageId);
-    // COULD_FREE_MEM
+    // COULD_FREE_MEM if other user was logged in before?
   });
 
   _.each(myPageData.unapprovedPostAuthors, (author: BriefUser) => {
@@ -625,7 +663,7 @@ function addRestrictedCategories(restrictedCategories: Category[], categories: C
 }
 
 
-ReactStore.allData = function() {
+ReactStore.allData = function(): Store {
   return store;
 };
 
@@ -729,6 +767,8 @@ export var StoreListenerMixin = {
   },
 
   componentWillUnmount: function() {
+    // BUG, harmless: [MIXINBUG] onChange might get invoked, just after the component
+    // got unmounted, but before we remove the listener here.
     ReactStore.removeChangeListener(this.onChange);
   }
 };
@@ -799,15 +839,16 @@ function updatePost(post: Post, pageId: PageId, isCollapsing?: boolean) {
   // (Top level embedded comments have no parent post — there's no Original Post.)
   if (!post.parentNr && post.nr != BodyNr && post.nr !== TitleNr) {
     page.parentlessReplyNrsSorted = findParentlessReplyIds(page.postsByNr);
-    sortPostNrsInPlaceBestFirst(page.parentlessReplyNrsSorted, page.postsByNr);
+    sortPostNrsInPlaceBestFirst(page. parentlessReplyNrsSorted, page.postsByNr);
   }
 
   rememberPostsToQuickUpdate(post.nr);
   stopGifsPlayOnClick();
   setTimeout(() => {
     debiki2.page.Hacks.processPosts();
-    if (!oldVersion && post.authorId === store.me.id) {
-      // Show the user his/her new post.   — Hmm, this just scrolls to it? it's loaded already, always?
+    if (!oldVersion && post.authorId === store.me.id && !post.isPreview) {
+      // Show the user his/her new post.
+      // Hmm, this just scrolls to it? it's loaded already, always?
       ReactActions.loadAndShowPost(post.nr);
     }
   }, 1);
@@ -1068,6 +1109,8 @@ function sortPostNrsInPlaceBestFirst(postNrs: PostNr[], postsByNr: { [nr: number
       return aPos < bPos
     } */
 
+    const onlyOneIsPreview = postA.isPreview !== postB.isPreview;
+
     // Place append-at-the-bottom posts at the bottom, sorted by time.
     const aLast = postA.postType === PostType.BottomComment || postA.postType === PostType.MetaMessage;
     const bLast = postB.postType === PostType.BottomComment || postB.postType === PostType.MetaMessage;
@@ -1075,8 +1118,20 @@ function sortPostNrsInPlaceBestFirst(postNrs: PostNr[], postsByNr: { [nr: number
       return -1;
     if (aLast && !bLast)
       return +1;
-    if (aLast && bLast)
-      return postApprovedOrCreatedBefore(postA, postB)
+    if (aLast && bLast) {
+      // Show any preview at the very bottom, that's where the post will later appear.
+      if (onlyOneIsPreview)
+        return postA.isPreview ? +1 : -1;
+      else
+        return postApprovedOrCreatedBefore(postA, postB)
+    }
+
+    // Place preview posts first, directly below the post it replies to — this makes
+    // it simpler to see what one replies to? Even though maybe the post won't 
+    // appear at that exact place (maybe there's another post with many like votes,
+    // which would then be placed above).
+    if (onlyOneIsPreview)
+      return postA.isPreview ? -1 : +1;
 
     // Place deleted posts last; they're rather uninteresting?
     if (!isDeleted(postA) && isDeleted(postB))
@@ -1213,6 +1268,11 @@ function updateNotificationCounts(notf: Notification, add: boolean) {
 
 
 function patchTheStore(storePatch: StorePatch) {
+  if (isDefined2(storePatch.setEditorOpen) && storePatch.setEditorOpen !== store.isEditorOpen) {
+    store.isEditorOpen = storePatch.setEditorOpen;
+    store.cannotQuickUpdate = true;
+  }
+
   if (storePatch.appVersion && storePatch.appVersion !== store.appVersion) {
     // COULD show dialog, like Discourse does: (just once)
     //   The server has been updated. Reload the page please?
@@ -1228,6 +1288,39 @@ function patchTheStore(storePatch: StorePatch) {
   if (storePatch.me) {
     // [redux] modifying the store in place, again.
     store.me = <Myself> _.assign(store.me || {}, storePatch.me);
+  }
+
+  if (storePatch.updateEditPreview) {
+    const replyPreviews = store.replyPreviewsByPostId ?? {};
+    const p = storePatch.updateEditPreview;
+    replyPreviews[p.postId] = p;
+    // [redux] modifying the store in place, again.
+    store.replyPreviewsByPostId = replyPreviews;
+
+    // Quick-update this — otherwise, the UI might always freeze, if typing
+    // fast on a low-end mobile?
+    // Maybe cannot quick-update though, if there're more things in the patch.
+    // @ifdef DEBUG
+    dieIf(_.size(storePatch) > 1, 'TyED205MWUG6');
+    // @endif
+    store.quickUpdate = true;
+    store.postsToUpdate[p.postId] = true;
+  }
+
+  if (storePatch.deleteDraft) {
+    _.each(store.me.myDataByPageId, (myData: MyPageData) => {
+      myData.myDrafts = _.filter(myData.myDrafts, (draft: Draft) => {
+        // Sometimes, the draftNr is 0 (or maybe in the future, different random negative
+        // numbers), although it's the same draft — namely when one hasn't logged in
+        // yet and the server couldn't yet give the draft a draft nr.
+        // Maybe in other cases, the locators are slightly different somehow,
+        // although it's the same draft — e.g. if an embedding page's url got changed?
+        // So compare by nr too.
+        const sameLocator = _.isEqual(draft.forWhat, storePatch.deleteDraft.forWhat);
+        const sameNr = !!draft.draftNr && draft.draftNr === storePatch.deleteDraft.draftNr;
+        return !sameLocator && !sameNr;
+      });
+    });
   }
 
   if (storePatch.publicCategories) {
@@ -1297,6 +1390,12 @@ function patchTheStore(storePatch: StorePatch) {
                   oldParent.childNrsSorted.splice(index, 1);
                 }
               }
+            }
+            if (movedToNewPage) {
+              delete oldPage.postsByNr[oldPost.nr];
+              arr_deleteInPlace(oldPage.parentlessReplyNrsSorted, oldPost.nr);
+              arr_deleteInPlace(oldPage.progressPostNrsSorted, oldPost.nr);
+              // It should get inserted into the new page by updatePost() below.
             }
           }
         });
@@ -1605,6 +1704,28 @@ function addLocalStorageDataTo(me: Myself) {
     const sessionWatchbar = loadWatchbarFromSessionStorage();
     me.watchbar[WatchbarSection.SubCommunities] = sessionWatchbar[WatchbarSection.SubCommunities];
     me.watchbar[WatchbarSection.RecentTopics] = sessionWatchbar[WatchbarSection.RecentTopics];
+  }
+
+  // Any drafts in session storage? Wrap in try-catch in case browser privacy
+  // settings forbids using sessionStorage.
+  if (!eds.isInEmbeddedEditor) try {
+    // TESTS_MISSING
+    Object.keys(sessionStorage).forEach(keyStr => {
+      if (keyStr.indexOf('embeddingUrl') >= 0) {
+        const locator: DraftLocator = JSON.parse(keyStr);
+        if (locator.embeddingUrl === eds.embeddingUrl) {
+          const draftStr = sessionStorage.getItem(keyStr);
+          const draft = JSON.parse(draftStr);
+          me.myCurrentPageData.myDrafts.push(draft);
+        }
+      }
+    });
+  }
+  catch (ex) {
+    // @ifdef DEBUG
+    console.debug(`Cannot access sessionStorage?`, ex)
+    // @endif
+    void 0; // [macro-bug], messes up file if 'endif' just before '}'
   }
 
   if (!store.currentPageId)

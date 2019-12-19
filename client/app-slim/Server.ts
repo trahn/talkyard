@@ -1359,7 +1359,7 @@ export function unpinPage(success: () => void) {
 
 
 export function saveReply(postNrs: PostNr[], text: string, anyPostType: number,
-      deleteDraftNr: DraftNr | undefined, success: () => void) {
+      deleteDraftNr: DraftNr | undefined, success: (storePatch: StorePatch) => void) {
   postJson('/-/reply', {
     data: {
       // Specify altPageId and embeddingUrl, so any embedded page can be created lazily. [4AMJX7]
@@ -1371,26 +1371,20 @@ export function saveReply(postNrs: PostNr[], text: string, anyPostType: number,
       text: text,
       deleteDraftNr,
     },
-    success: (response) => {
-      d.i.handleReplyResult(response);
-      success();
-    }
+    success
   });
 }
 
 
 export function insertChatMessage(text: string, deleteDraftNr: DraftNr | undefined,
-      success: () => void) {
+      success: (storePatch: StorePatch) => void) {
   postJson('/-/chat', {
     data: {
       pageId: getPageId(),
       text: text,
       deleteDraftNr,
     },
-    success: (response) => {
-      d.i.handleReplyResult(response);
-      success();
-    }
+    success
   });
 }
 
@@ -1582,12 +1576,12 @@ export function loadAllTags(success: (tags: string[]) => void) {
 
 
 export function loadTagsAndStats() {
-  get('/-/load-tags-and-stats', ReactActions.patchTheStore);
+  get('/-/load-tags-and-stats', r => ReactActions.patchTheStore(r));
 }
 
 
 export function loadMyTagNotfLevels() {
-  get('/-/load-my-tag-notf-levels', ReactActions.patchTheStore);
+  get('/-/load-my-tag-notf-levels', r => ReactActions.patchTheStore(r));
 }
 
 

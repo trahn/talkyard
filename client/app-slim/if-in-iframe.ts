@@ -98,18 +98,15 @@ function onMessage(event) {
       // It opens the editor to write a reply to `postId`.
       var postNr = eventData[0];
       var inclInReply = eventData[1];
-      debiki2.editor.toggleWriteReplyToPostNr(postNr, inclInReply, PostType.Normal);
+      var postType = eventData[2] ?? PostType.Normal;
+      debiki2.editor.toggleWriteReplyToPostNr(postNr, inclInReply, postType);
       break;
     case 'handleReplyResult':
       // This message is sent from the embedded editor <iframe> to the comments
       // <iframe> when the editor has posted a new reply and the server has replied
       // with the HTML for the reply. `eventData` is JSON that includes this HTML;
       // it'll be inserted into the comments <iframe>.
-      d.i.handleReplyResult(eventData);
-      break;
-    case 'clearIsReplyingMarks':
-      // This is sent from the embedded editor to an embedded comments page.
-      d.i.clearIsReplyingMarks();
+      ReactActions.handleReplyResult(eventData[0], eventData[1]);
       break;
     case 'editorEditPost':
       // Sent from an embedded comments page to the embedded editor.
@@ -119,6 +116,16 @@ function onMessage(event) {
     case 'handleEditResult':
       // This is sent from the embedded editor back to an embedded comments page.
       debiki2.ReactActions.handleEditResult(eventData);
+      break;
+    case 'showEditsPreview':
+      ReactActions.showEditsPreview(eventData);
+      break;
+    case 'scrollToPreview':
+      ReactActions.scrollToPreview(eventData);
+      break;
+    case 'hideEditorAndPreview':
+      // This is sent from the embedded editor to an embedded comments page.
+      ReactActions.hideEditorAndPreview(eventData);
       break;
     case 'iframeOffsetWinSize':
       debiki2.iframeOffsetWinSize = eventData;

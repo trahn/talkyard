@@ -10,7 +10,10 @@ declare const t: TalkyardTranslations;
 
 declare const ReactCSSTransitionGroup: any;
 declare const ReactDOMFactories: any;
-declare const createReactClass: any;
+
+declare function createReactClass<P, S = {}>(spec: React.ComponentSpec<P, S>):
+    React.ClassicComponentClass<P>;
+
 declare function reactCreateFactory(x);
 declare const rFragment: any;
 
@@ -125,6 +128,8 @@ declare namespace debiki2 {
   function $$byClass(className: string): HTMLCollectionOf<Element>;
   const $h: any;
 
+  function highlightPostNrBrieflyIfThere(nr: PostNr);
+
   // React-Router:
   const Router: any;
   const Switch: any;
@@ -140,7 +145,8 @@ declare namespace debiki2 {
 
   var createComponent: any;       // don't use — I'm renaming to createFactory
   var createClassAndFactory: any; // don't use — I'm renaming to createFactory
-  function createFactory(componentDefinition);
+  function createFactory<P, S = {}>(compSpec: React.ComponentSpec<P, S>): React.Factory<any>;
+
 
   function replaceById(itemsWithId: any[], replacement);
   function deleteById(itemsWithId: any[], id);
@@ -280,6 +286,25 @@ declare namespace debiki2 {
   var page_isGroupTalk;
   let store_getUserOrMissing;
   var store_thisIsMyPage;
+
+  function draftType_toPostType(draftType: DraftType): PostType | undefined;
+  function postType_toDraftType(postType: PostType): DraftType | undefined;
+  function store_findTheDefaultCategory(store: Store): Category | undefined;
+  function store_ancestorsCategoriesCurrLast(store: Store, categoryId: CategoryId): Category[];
+  function store_findCatsWhereIMayCreateTopics(store: Store): Category[];
+
+  function store_makeDraftPostPatch(store: Store, page: Page, draft: Draft): StorePatch;
+
+  function post_makePreviewIdNr(parentPostNr: PostNr, newPostType: PostType): PostNr & PostId;
+
+  function store_makeNewPostPreviewPatch(
+      store: Store, page: Page, parentPostNr: PostNr, safePreviewHtml: string,
+      newPostType?: PostType): StorePatch;
+  function store_makeEditsPreviewPatch(
+      store: Store, page: Page, post: Post, safePreviewHtml: string): StorePatch;
+  function store_makeDeletePreviewPatch(
+      store: Store, parentPostNr: PostNr, newPostType?: PostType): StorePatch;
+
   var hasErrorCode;
   var page_mayChangeRole;
   function page_canToggleClosed(page: Page): boolean;

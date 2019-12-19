@@ -67,11 +67,51 @@ export const listUsernamesTrigger = {
 };
 
 
-export const Editor = createComponent({
+interface EditorState {
+  store: Store;
+  visible: boolean;
+  replyToPostNrs: PostNr[];
+  anyPostType?: PostType;
+  editorsCategories?: Category[];
+  editorsPageId?: PageId;
+  editingPostNr?: PostNr;
+  editingPostUid?: PostId;
+  isWritingChatMessage?: boolean;
+  messageToUserIds: UserId[],
+  newForumTopicCategoryId?: CategoryId;
+  newPageRole?: PageType;
+  editingPostRevisionNr?: number;
+  text: string;
+  title: string;
+  showTitleErrors?: boolean;
+  showTextErrors?: boolean;
+  draftStatus: DraftStatus;
+  draft?: Draft;
+  safePreviewHtml: string;
+  onDone?:  EditsDoneHandler;
+  guidelines?: Guidelines;
+  backdropOpacity: 0,
+  isUploadingFile: boolean;
+  fileUploadProgress: number;
+  uploadFileXhr?: any;
+  showSimilarTopics?: boolean;
+  searchResults?: any;
+}
+
+interface Guidelines {
+  writingWhat: WritingWhat,
+  categoryId: CategoryId;
+  pageRole: PageType;
+  safeHtml: string;
+  hidden: boolean;
+}
+
+
+export const Editor = createFactory<any, EditorState>({
   displayName: 'Editor',
   mixins: [debiki2.StoreListenerMixin],
 
-  getInitialState: function() {
+  getInitialState: function(): EditorState {
     return {
       store: debiki2.ReactStore.allData(),
       visible: false,
@@ -80,6 +120,7 @@ export const Editor = createComponent({
       draft: null,
       draftStatus: DraftStatus.NotLoaded,
       safePreviewHtml: '',
+      anyPostType: undefined,
       replyToPostNrs: [],
       editingPostNr: null,
       editingPostUid: null,  // CLEAN_UP RENAME to ...PostId not ...Uid
@@ -99,9 +140,14 @@ export const Editor = createComponent({
   },
 
   componentWillMount: function() {
-    this.updatePreview = _.debounce(this.updatePreview, 333);
-    this.saveDraftDebounced = _.debounce(this.saveDraftNow, 2022);  // [7AKBJ42]
-    this.searchForSimilarTopicsDebounced = _.debounce(this.searchForSimilarTopics, 1800);
+    this.updatePreviewSoon = _.debounce(this.updatePreviewNow, 333);
+
+    this.saveDraftSoon = _.debounce(() => {
+      if (this.isGone || !this.state.visible) return;
+      this.saveDraftNow();  // [7AKBJ42]
+    }, 2022);
+
+    this.searchForSimilarTopicsSoon = _.debounce(this.searchForSimilarTopicsNow, 1800);
   },
 
   componentDidMount: function() {
@@ -261,15 +307,15 @@ export const Editor = createComponent({
             linkHtml,
           draftStatus: DraftStatus.ShouldSave,
         }, () => {
-          this.saveDraftDebounced();
+          this.saveDraftSoon();
           // Scroll down so people will see the new line we just appended.
           scrollToBottom(this.refs.rtaTextarea.textareaRef);
-          this.updatePreview(() => {
-            // This happens to early, not sure why. So wait for a while.
+          this.updatePreviewSoon({ onDone: () => {
+            // This happens to early — maybe a onebox can take long to load? So wait for a while.
             setTimeout(() => {
               scrollToBottom(this.refs.preview);
             }, 800);
-          });
+          }});
         });
       },
     });
@@ -338,16 +384,42 @@ export const Editor = createComponent({
     return link;
   },
 
-  toggleWriteReplyToPostNr: function(postNr: PostNr, inclInReply: boolean, anyPostType?: number) {
+  toggleWriteReplyToPostNr: function(postNr: PostNr, inclInReply: boolean,
+        anyPostType?: PostType) {
     if (this.alertBadState('WriteReply'))
       return;
 
     const store: Store = this.state.store;
+    let postNrs = this.state.replyToPostNrs;
+
+    if (inclInReply && postNrs.length) {
+      // This means we've started replying to a post, and then clicked Reply
+      // for *another* post too — i.e. we're trying to reply to more than one post,
+      // a a single time. This is, in Talkyard, called Multireply.
+      // Disable this for now — it's disabled server side, and the UX was always
+      // rather poor actually. UX COULD disable the reply buttons? Also see (5445522) just below.
+      return;
+    }
+
+    // No multireplies — disabled.
+    dieIf(postNrs.length >= 2, 'TyE35KKGJRT0');
+
+    if (this.state.editorsPageId !== store.currentPageId && postNrs.length) {
+      // The post nrs on this different page, won't match the ones in postNrs.
+      // So ignore this.
+      // UX COULD disable the reply buttons? Also see (5445522) just above.
+      return;
+    }
 
     // Insert postNr into the list of posts we're replying to — or remove it, if present. (I.e. toggle.)
-    let postNrs = this.state.replyToPostNrs;
+
     const index = postNrs.indexOf(postNr);
     if (inclInReply && index >= 0) {
+      // 2020: Dead code.
+      die('TyE305WKGJS34');
+      /*
+      // Now almost certainly this can be removed — Reply buttons hidden,
+      // once edior open. So cannot get out of sync?
       // Editor out of sync with reply button states: reply button wants to add,
       // editor wants to remove the post, from the reply-to-list.
       // Happened in embedded comments iframe because of a bug. Fixed now, but keep this
@@ -359,13 +431,17 @@ export const Editor = createComponent({
       // @endif
       postNrs = [postNr];
       this.showEditor();
+      */
     }
     else if (index === -1) {
+      // We're starting to write a reply to postNr.
       postNrs.push(postNr);
-      this.showEditor({ scrollToShowPostNr: postNr });
     }
     else {
-      postNrs.splice(index, 1);
+      // 2020: Dead code.
+      die('TyE305WKGJS34');
+      // Remove postNr — we're not going to reply to it any longer.
+      //postNrs.splice(index, 1);
     }
 
     // Don't change post type from flat to something else.
@@ -373,20 +449,26 @@ export const Editor = createComponent({
     if (postNrs.length >= 2 && this.state.anyPostType === PostType.Flat) {
       postType = PostType.Flat;
     }
-    this.setState({
+
+    const newState: Partial<EditorState> = {
       anyPostType: postType,
       editorsCategories: store.currentCategories,
       editorsPageId: store.currentPageId,
       replyToPostNrs: postNrs,
       text: this.state.text || makeDefaultReplyText(store, postNrs),
-    });
+    };
+    this.showEditor(newState);
+
     if (!postNrs.length) {
       this.saveDraftClearAndClose();
       return;
     }
 
+    const draftType = postType === PostType.BottomComment ?
+        DraftType.ProgressPost : DraftType.Reply;
+
     const draftLocator: DraftLocator = {
-      draftType: DraftType.Reply,
+      draftType,
       pageId: store.currentPageId,
       postNr: postNrs[0], // for now
     };
@@ -402,7 +484,7 @@ export const Editor = createComponent({
     this.loadDraftAndGuidelines(draftLocator, writingWhat);
   },
 
-  editPost: function(postNr: PostNr, onDone?) {
+  editPost: function(postNr: PostNr, onDone?: EditsDoneHandler) {
     // [editor-drafts] UX COULD somehow give the user the option to cancel & close, without
     // loading? saving? any draft.
 
@@ -410,7 +492,6 @@ export const Editor = createComponent({
       return;
     Server.loadDraftAndText(postNr, (response: LoadDraftAndTextResponse) => {
       if (this.isGone) return;
-      this.showEditor({ scrollToShowPostNr: response.postNr });
       const store: Store = this.state.store;
       const draft: Draft | undefined = response.draft;
 
@@ -422,7 +503,8 @@ export const Editor = createComponent({
       // This can fail, if the post was moved by staff to a different page? Then it
       // gets a new postNr. Then do what? Show a "this post was moved to: ..." dialog?
       dieIf(postNr !== response.postNr, 'TyE23GPKG4');
-      this.setState({
+
+      const newState: Partial<EditorState> = {
         anyPostType: null,
         editorsCategories: store.currentCategories,
         editorsPageId: response.pageId,
@@ -433,10 +515,9 @@ export const Editor = createComponent({
         onDone: onDone,
         draftStatus: DraftStatus.NothingHappened,
         draft,
-      }, () => {
-        this.focusInputFields();
-        this.updatePreview();
-      });
+      };
+
+      this.showEditor(newState);
     });
   },
 
@@ -447,11 +528,11 @@ export const Editor = createComponent({
     dieIf(role === PageRole.PrivateChat && categoryId, 'EsE5KF024');
     // But other topics should be placed in a category.
     dieIf(role !== PageRole.PrivateChat && !categoryId, 'EsE8PE2B');
-    this.showEditor();
+
     const text = this.state.text || '';
     const store: Store = this.state.store;
 
-    this.setState({
+    const newState: Partial<EditorState> = {
       anyPostType: null,
       editorsCategories: store.currentCategories,
       editorsPageId: store.currentPageId,
@@ -460,8 +541,9 @@ export const Editor = createComponent({
       text: text,
       showSimilarTopics: true,
       searchResults: null,
-    },
-      this.updatePreview);
+    };
+
+    this.showEditor(newState);
 
     const draftLocator: DraftLocator = {
       draftType: DraftType.Topic,
@@ -476,12 +558,13 @@ export const Editor = createComponent({
     this.editPost(BodyNr);
   },
 
-  openToWriteChatMessage: function(text: string, draft: Draft | undefined, draftStatus, onDone?) {
+  openToWriteChatMessage: function(text: string, draft: Draft | undefined, draftStatus,
+        onDone?: EditsDoneHandler) {
     if (this.alertBadState())
       return;
+
     const store: Store = this.state.store;
-    this.showEditor();
-    this.setState({
+    const newState: Partial<EditorState> = {
       editorsCategories: store.currentCategories,
       editorsPageId: store.currentPageId,
       isWritingChatMessage: true,
@@ -489,27 +572,31 @@ export const Editor = createComponent({
       draft,
       draftStatus,
       onDone,
-    });
+    };
+
+    this.showEditor(newState);
     // No guidelines for chat messages, because usually a smaller "inline" editor is used instead.
   },
 
   openToWriteMessage: function(userId: UserId) {
     if (this.alertBadState())
       return;
-    this.showEditor();
     const store: Store = this.state.store;
-    this.setState({
+    const newState: Partial<EditorState> = {
       editorsCategories: store.currentCategories,
       editorsPageId: store.currentPageId,
       messageToUserIds: [userId],
       text: '',
       newPageRole: PageRole.FormalMessage,
-    });
+    };
+    
+    this.showEditor(newState);
+
     const draftLocator: DraftLocator = {
       draftType: DraftType.DirectMessage,
       toUserId: userId,
     };
-    this.loadDraftAndGuidelines(draftLocator, WritingWhat.NewPage, PageRole.FormalMessage);
+    this.loadDraftAndGuidelines(draftLocator, WritingWhat.NewPage, PageRole.FormalMessage);   // hmmprvw
     this.showAndFadeOutBackdrop();
   },
 
@@ -528,7 +615,9 @@ export const Editor = createComponent({
     setTimeout(fadeBackdrop, 1400);
   },
 
-  scrollPostIntoView: function(postNr) {
+  scrollPostIntoView: function(postNr) {   // hmmprvw
+    // send message to iframe parent?
+
     const postElem = $byId('post-' + postNr);
     // There's no pots-1 = BodyNr in embedded comments discussions (there's a blog
     // article instead, on the embedding page).
@@ -544,6 +633,9 @@ export const Editor = createComponent({
   alertBadState: function(wantsToDoWhat = null): boolean {
     // REFACTOR  we call clearIsReplyingMarks from here, so cannot return directly if allFine,
     // which makse this unnecessarily complicated?
+    // :- ) But now clearIsReplyingMarks() is gone !
+    // so can simplify? this.  (it was old jQuery code that highlighted
+    // the active Reply button(s).)
 
     const store: Store = this.state.store;
     const allFine = this.state.draftStatus <= DraftStatus.NeedNotSave &&
@@ -568,22 +660,11 @@ export const Editor = createComponent({
 
     if (_.isNumber(this.state.editingPostNr)) {
       maybeAlert(t.e.PleaseSaveEdits);
-      // If this is an embedded editor, for an embedded comments page, that page
-      // will now have highlighted some reply button to indicate a reply is
-      // being written. But that's wrong, clear those marks.
-      if (eds.isInEmbeddedEditor) {
-        window.parent.postMessage(
-          JSON.stringify(['clearIsReplyingMarks', {}]), eds.embeddingOrigin);
-      }
-      else {
-        d.i.clearIsReplyingMarks();
-      }
       seemsBad = true;
     }
 
     if (this.state.newPageRole) {
       maybeAlert(t.e.PleaseSaveOrCancel);
-      d.i.clearIsReplyingMarks();
       seemsBad = true;
     }
 
@@ -602,7 +683,7 @@ export const Editor = createComponent({
         draftStatus: DraftStatus.NothingHappened,
         text: draft ? draft.text : '',
         title: draft ? draft.title : '',
-      });
+      });    // hmmprvw
       return;
     }
 
@@ -624,6 +705,8 @@ export const Editor = createComponent({
 
     Server.loadDraftAndGuidelines(draftLocator, writingWhat, theCategoryId, thePageRole,
         (guidelinesSafeHtml, draft?: Draft) => {
+      if (this.isGone || !this.state.visible)
+        return;
       let guidelines = undefined;
       if (guidelinesSafeHtml) {
         const guidelinesHash = hashStringToNumber(guidelinesSafeHtml);
@@ -645,7 +728,7 @@ export const Editor = createComponent({
         title: draft ? draft.title : '',
         guidelines,
       },
-        this.focusInputFields);
+        this.focusInputFields);   // hmmprvw
     });
   },
 
@@ -714,12 +797,12 @@ export const Editor = createComponent({
 
     this.setState({ title, text, draftStatus }, () => {
       if (draftStatus === DraftStatus.ShouldSave) {
-        this.saveDraftDebounced();
+        this.saveDraftSoon();
       }
       if (titleChanged) {
-        this.searchForSimilarTopicsDebounced();
+        this.searchForSimilarTopicsSoon();
       }
-      this.updatePreview();
+      this.updatePreviewSoon();
     });
   },
 
@@ -741,22 +824,52 @@ export const Editor = createComponent({
     return true;
   },
 
-  updatePreview: function(anyCallback?) {
-    if (this.isGone) return;
+  updatePreviewNow: function(ps: { scrollToPreview?: true, onDone?: () => void } = {}) {
+    // This function is debounce-d, so the editor might have been cleared
+    // and closed already, or even unmounted.
+    if (this.isGone || !this.state.visible)
+      return;
 
     // (COULD verify still edits same post/thing, or not needed?)
     const isEditingBody = this.state.editingPostNr === BodyNr;
     const sanitizerOpts = {
-      allowClassAndIdAttr: true, // or only if isEditingBody?
+      allowClassAndIdAttr: true, // or only if isEditingBody?  dupl [304KPGSD25]
       allowDataAttr: isEditingBody
     };
-    const htmlText = markdownToSafeHtml(this.state.text, window.location.host, sanitizerOpts);
+
+    const safeHtml = markdownToSafeHtml(
+        this.state.text, window.location.host, sanitizerOpts);
+
     this.setState({
-      safePreviewHtml: htmlText
-    }, anyCallback);
+      // UX COULD save this in the draft too, & send to the server, so the preview html
+      // is available when rendering the page and one might want to see one's drafts,
+      // here: [DRAFTPRVW].
+      safePreviewHtml: safeHtml,
+    }, () => {
+      // Show an in-page preview, unless we're creating a new page.
+      if (!this.state.newPageRole) {
+        const params: ShowEditsPreviewParams = {
+          scrollToPreview: ps.scrollToPreview,
+          safeHtml,
+          editorsPageId: this.state.editorsPageId,
+        };
+        const postNrs: PostNr[] = this.state.replyToPostNrs;
+        if (postNrs.length === 1) {
+          params.replyToNr = postNrs[0];
+          params.anyPostType = this.state.anyPostType;
+        }
+        if (this.state.editingPostUid) {
+          params.editingPostNr = this.state.editingPostNr;
+        }
+        ReactActions.showEditsPreview(params);
+        // We'll hide the preview, wheh closing the editor, here: (TGLPRVW)
+      }
+
+      ps.onDone?.();
+    });
   },
 
-  searchForSimilarTopics: function() {
+  searchForSimilarTopicsNow: function() {
     if (!this.refs.editor)
       return;
 
@@ -793,7 +906,8 @@ export const Editor = createComponent({
     }
 
     Server.search(this.state.title, (searchResults: SearchResults) => {
-      if (this.isGone) return;
+      if (this.isGone || !this.state.visible)
+        return;
       // Exclude category description pages — they're off-topic, here. Also don't show
       // forum topic index pages or blog post list pages. (Such pages are typically
       // *not* answers to a question we're asking.)
@@ -831,9 +945,14 @@ export const Editor = createComponent({
   },
 
   makeEmptyDraft: function(): Draft | undefined {
+    const anyPostType: PostType | undefined = this.state.anyPostType;
     const locator: DraftLocator = { draftType: DraftType.Scratch };
     const store: Store = this.state.store;
     let postType: PostType;
+
+    // @ifdef DEBUG
+    dieIf(!this.state.replyToPostNrs, '[TyE502KRDL35]');
+    // @endif
 
     if (this.state.editingPostNr) {
       locator.draftType = DraftType.Edit;
@@ -841,12 +960,16 @@ export const Editor = createComponent({
       locator.postId = this.state.editingPostUid;
       locator.postNr = this.state.editingPostNr;
     }
-    else if (this.state.replyToPostNrs && this.state.replyToPostNrs.length) {
-      locator.draftType = DraftType.Reply;
+    else if (this.state.replyToPostNrs?.length) {  // can remove '?.', never undef? [TyE502KRDL35]
+      // @ifdef DEBUG
+      dieIf(anyPostType !== PostType.Normal &&
+          anyPostType !== PostType.BottomComment, 'TyE25KSTJ30');
+      // @endif
+      postType = anyPostType || PostType.Normal;
+      locator.draftType = postType_toDraftType(postType);
       locator.pageId = this.state.editorsPageId;
       locator.postNr = this.state.replyToPostNrs[0]; // for now just pick the first one
       locator.postId = getPostId(store, locator.pageId, locator.postNr);
-      postType = PostType.Normal;
       // This is needed for embedded comments, if the discussion page hasn't yet been created.
       if (eds.embeddingUrl) {
         locator.embeddingUrl = eds.embeddingUrl;
@@ -893,7 +1016,8 @@ export const Editor = createComponent({
     this.saveDraftNow(undefined, UseBeacon);
   },
 
-  saveDraftNow: function(callbackThatClosesEditor: () => void | undefined, useBeacon?: UseBeacon) {
+  saveDraftNow: function(callbackThatClosesEditor: (draft?: Draft) => void,
+      useBeacon?: UseBeacon) {
     // Tested here: 7WKABZP2
     // A bit dupl code [4ABKR2J0]
 
@@ -908,7 +1032,7 @@ export const Editor = createComponent({
 
     if (!draftOldOrEmpty || draftStatus <= DraftStatus.NeedNotSave) {
       if (callbackThatClosesEditor) {
-        callbackThatClosesEditor();
+        callbackThatClosesEditor(oldDraft);
       }
       return;
     }
@@ -936,19 +1060,23 @@ export const Editor = createComponent({
         });
         this.isSavingDraft = true;
         Server.deleteDrafts([oldDraft.draftNr], useBeacon || (() => {
+          // Could patch the store: delete the draft — so won't reappear
+          // if [offline-first] and navigates back to this page.
+
           this.isSavingDraft = false;
           console.debug("...Deleted draft.");
+
+          if (this.isGone || !this.state.visible)
+            return;
+
           this.setState({
             draft: null,
             draftStatus: DraftStatus.Deleted,
           });
-          if (callbackThatClosesEditor) {
-            callbackThatClosesEditor();
-          }
         }), useBeacon || this.setCannotSaveDraft);
       }
       if (callbackThatClosesEditor) {
-        callbackThatClosesEditor();
+        callbackThatClosesEditor();  // how make this delete the draft?
       }
       return;
     }
@@ -969,26 +1097,36 @@ export const Editor = createComponent({
 
     if (saveInSessionStorage) {
       putInSessionStorage(draftToSave.forWhat, draftToSave);
+      this.setState({
+         draft: draftToSave,
+         draftStatus: DraftStatus.SavedInBrowser,
+      });
       if (callbackThatClosesEditor) {
-        callbackThatClosesEditor();
+        callbackThatClosesEditor(draftToSave);
       }
       return;
     }
 
     this.setState({
-      draftStatus: callbackThatClosesEditor ? DraftStatus.SavingBig : DraftStatus.SavingSmall,
+      draftStatus: callbackThatClosesEditor ?
+          DraftStatus.SavingBig : DraftStatus.SavingSmall,
     });
 
     this.isSavingDraft = true;
     Server.upsertDraft(draftToSave, useBeacon || ((draftWithNr: Draft) => {
       this.isSavingDraft = false;
       console.debug("...Saved draft.");
+
+      if (this.isGone || !this.state.visible)
+        return;
+
       this.setState({
         draft: draftWithNr,
         draftStatus: DraftStatus.Saved,
       });
+
       if (callbackThatClosesEditor) {
-        callbackThatClosesEditor();
+        callbackThatClosesEditor(draftWithNr);
       }
     }), useBeacon || this.setCannotSaveDraft);
   },
@@ -1030,7 +1168,7 @@ export const Editor = createComponent({
         this.postChatMessage();
       }
       else {
-        // Probably replying to someone.
+        // Replying to someone.
         this.saveNewPost();
       }
     });
@@ -1038,6 +1176,7 @@ export const Editor = createComponent({
 
   saveEdits: function() {
     this.throwIfBadTitleOrText(null, t.e.PleaseDontDeleteAll);
+    delete this.origPostBeforeEdits;
     Server.saveEdits(this.state.editingPostNr, this.state.text, this.anyDraftNr(), () => {
       this.callOnDoneCallback(true);
       this.clearAndClose();
@@ -1046,8 +1185,8 @@ export const Editor = createComponent({
 
   saveNewPost: function() {
     this.throwIfBadTitleOrText(null, t.e.PleaseWriteSth);
-    Server.saveReply(this.state.replyToPostNrs, this.state.text,
-          this.state.anyPostType, this.anyDraftNr(), () => {
+    ReactActions.saveReply(this.state.replyToPostNrs, this.state.text,
+          this.state.anyPostType, this.state.draft, () => {
       this.callOnDoneCallback(true);
       this.clearAndClose();
     });
@@ -1064,13 +1203,15 @@ export const Editor = createComponent({
       deleteDraftNr: this.anyDraftNr(),
     };
     Server.createPage(data, (newPageId: string) => {
+      // Could, but not needed, since assign() below:
+      //   this.callOnDoneCallback(true);
       this.clearAndClose();
       window.location.assign('/-' + newPageId);
     });
   },
 
   postChatMessage: function() {
-    Server.insertChatMessage(this.state.text, this.anyDraftNr(), () => {
+    ReactActions.insertChatMessage(this.state.text, this.state.draft, () => {
       this.callOnDoneCallback(true);
       this.clearAndClose();
     });
@@ -1081,6 +1222,8 @@ export const Editor = createComponent({
     const state = this.state;
     Server.startPrivateGroupTalk(state.title, state.text, this.state.newPageRole,
         state.messageToUserIds, this.anyDraftNr(), (pageId: PageId) => {
+      // Could, but not needed, since assign() below:
+      //   this.callOnDoneCallback(true);
       this.clearAndClose();
       window.location.assign('/-' + pageId);
     });
@@ -1142,36 +1285,63 @@ export const Editor = createComponent({
     // Else: the editor covers 100% anyway.
   },
 
-  showEditor: function(opts: { scrollToShowPostNr?: PostNr } = {}) {
+  showEditor: function(statePatch: Partial<EditorState>) {
+    // @ifdef DEBUG
+    dieIf(!_.isUndefined(statePatch.visible), 'TyE305WKTJP4');
+    // @endif
     this.makeSpaceAtBottomForEditor();
-    this.setState({ visible: true });
-    if (eds.isInEmbeddedEditor) {
-      window.parent.postMessage(JSON.stringify(['showEditor', {}]), eds.embeddingOrigin);
-    }
-    // After rerender, focus the input fields, and maybe need to scroll, so the post we're editing
-    // or replying to, isn't occluded by the editor (then hard to know what we're editing).
-    setTimeout(() => {
-      if (this.isGone) return;
+    const newState: Partial<EditorState> = { ...statePatch, visible: true };
+    this.setState(newState); //, onDone);
+    ReactActions.onEditorOpen(() => {
+      if (this.isGone || !this.state.visible) return;
       this.focusInputFields();
-      this.updatePreview();
-      if (opts.scrollToShowPostNr) {
-        this.scrollPostIntoView(opts.scrollToShowPostNr);
-      }
-    }, 1);
+      this.updatePreviewSoon({ scrollToPreview: true });
+    });
   },
 
   saveDraftClearAndClose: function() {
-    this.saveDraftNow(() => this.clearAndClose({ keepDraft: true }));
+    this.saveDraftNow(
+        (upToDateDraft?: Draft) => this.clearAndClose({ keepDraft: true, upToDateDraft }));
   },
 
-  clearAndClose: function(ps: { keepDraft?: true } = {}) {
-    if (!ps.keepDraft) {
-      const anyDraft: Draft = this.state.draft;
-      if (anyDraft)
-        removeFromSessionStorage(anyDraft.forWhat);
+  clearAndClose: function(ps: { keepDraft?: true, upToDateDraft?: Draft } = {}) {
+    const state: EditorState = this.state;
+    const anyDraft: Draft = ps.upToDateDraft || state.draft;
+
+    if (!ps.keepDraft && anyDraft) {
+      removeFromSessionStorage(anyDraft.forWhat);
     }
 
+    const params: HideEditsorAndPreviewParams = {
+      anyDraft,
+      keepDraft: ps.keepDraft,
+      editorsPageId: state.editorsPageId,
+    };
+
+    const postNrs: PostNr[] = state.replyToPostNrs;
+    if (postNrs.length === 1) {
+      params.replyToNr = postNrs[0];
+      params.anyPostType = state.anyPostType;
+    }
+
+    if (state.editingPostUid) {
+      params.editingPostNr = state.editingPostNr;
+    }
+
+    if (state.isWritingChatMessage) {
+      // Then we'll continue typing, in the simple chat message text box.
+      params.keepPreview = true;
+    }
+
+    // Hide any preview we created when opening the editor (TGLPRVW),
+    // and reenable any Reply buttons.
+    ReactActions.hideEditorAndPreview(params);
+
     this.returnSpaceAtBottomForEditor();
+
+    if (this.isGone)
+      return;
+
     this.setState({
       visible: false,
       replyToPostNrs: [],
@@ -1196,19 +1366,12 @@ export const Editor = createComponent({
       guidelines: null,
       backdropOpacity: 0,
     });
-    // Remove any is-replying highlights.
-    if (eds.isInEmbeddedEditor) {
-      window.parent.postMessage(JSON.stringify(['hideEditor', {}]), eds.embeddingOrigin);
-    }
-    else {
-      // (Old jQuery based code.)
-      $h.removeClasses($all('.dw-replying'), 'dw-replying');
-    }
   },
 
   callOnDoneCallback: function(saved: boolean) {
-    if (this.state.onDone) {
-      this.state.onDone(
+    const onDone: EditsDoneHandler = this.state.onDone;
+    if (onDone) {
+      onDone(
           saved, this.state.text,
           // If the text in the editor was saved (i.e. submitted, not draft-saved), we don't
           // need the draft any longer.
@@ -1224,27 +1387,27 @@ export const Editor = createComponent({
 
   makeTextBold: function() {
     const newText = wrapSelectedText(this.refs.rtaTextarea.textareaRef, t.e.exBold, '**');
-    this.setState({ text: newText }, this.updatePreview);
+    this.setState({ text: newText }, this.updatePreviewSoon);
   },
 
   makeTextItalic: function() {
     const newText = wrapSelectedText(this.refs.rtaTextarea.textareaRef, t.e.exEmph, '*');
-    this.setState({ text: newText }, this.updatePreview);
+    this.setState({ text: newText }, this.updatePreviewSoon);
   },
 
   markupAsCode: function() {
     const newText = wrapSelectedText(this.refs.rtaTextarea.textareaRef, t.e.exPre, '`');
-    this.setState({ text: newText }, this.updatePreview);
+    this.setState({ text: newText }, this.updatePreviewSoon);
   },
 
   quoteText: function() {
     const newText = wrapSelectedText(this.refs.rtaTextarea.textareaRef, t.e.exQuoted, '> ', null, '\n\n');
-    this.setState({ text: newText }, this.updatePreview);
+    this.setState({ text: newText }, this.updatePreviewSoon);
   },
 
   addHeading: function() {
     const newText = wrapSelectedText(this.refs.rtaTextarea.textareaRef, t.e.ExHeading, '### ', null, '\n\n');
-    this.setState({ text: newText }, this.updatePreview);
+    this.setState({ text: newText }, this.updatePreviewSoon);
   },
 
   render: function() {
@@ -1651,25 +1814,6 @@ function page_isUsabilityTesting(pageType: PageRole): boolean {  // [plugin]
 }
 
 
-const SelectCategoryInput = createClassAndFactory({
-  displayName: 'SelectCategoryInput',
-
-  render: function () {
-    const categoryOptions = this.props.categories.map((category: Category) => {
-      return r.option({ value: category.id, key: category.id }, category.name);
-    });
-
-    return (
-      Input({
-          type: 'select', label: this.props.label, title: this.props.title,
-          labelClassName: this.props.labelClassName,
-          wrapperClassName: this.props.wrapperClassName,
-          value: this.props.categoryId, onChange: this.props.onChange },
-        categoryOptions));
-  }
-});
-
-
 function wrapSelectedText(textarea, content: string, wrap: string, wrapAfter?: string,
       newlines?: string) {
   const startIndex = textarea.selectionStart;
@@ -1759,6 +1903,7 @@ export function DraftStatusInfo(props: { draftStatus: DraftStatus, draftNr: numb
     case DraftStatus.NotLoaded: draftStatusText = t.e.LoadingDraftDots; break;
     case DraftStatus.NothingHappened: break;
     case DraftStatus.EditsUndone: draftStatusText = t.e.DraftUnchanged; break;
+    case DraftStatus.SavedInBrowser: draftStatusText = "Draft saved, in browser session."; break;  // I18N
     case DraftStatus.Saved: draftStatusText = t.e.DraftSaved(draftNr); break;
     case DraftStatus.Deleted: draftStatusText = t.e.DraftDeleted(draftNr); break;
     case DraftStatus.ShouldSave: draftStatusText = t.e.WillSaveDraft(draftNr); break;

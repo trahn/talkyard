@@ -70,7 +70,8 @@ const enum DraftStatus {  // sync with test code [5ABXG20]
   NotLoaded = 0,
   NothingHappened = 1,
   EditsUndone = 2,
-  Saved = 3,
+  Saved = 3,   // RENAME to SavedInServer
+  SavedInBrowser = 31,
   Deleted = 4,
   NeedNotSave = Deleted,
   ShouldSave = 5,
@@ -81,12 +82,14 @@ const enum DraftStatus {  // sync with test code [5ABXG20]
 }
 
 
-const enum DraftType {
+// Create fn for converting from DraftType to PostType — done, [0345JKATSJ]
+const enum DraftType {   // check all swith-cases — adding ProgressPost
   Scratch = 1,
   Topic = 2,
   DirectMessage = 3,
   Edit = 4,
   Reply = 5,
+  ProgressPost = 6,
 }
 
 
