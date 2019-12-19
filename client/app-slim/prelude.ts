@@ -260,7 +260,7 @@ export function isDefined2(x): boolean {
 
 
 // Ooops bad name, shouldn't include null  CLEAN_UP rename to isPresent/isSomething/isSth/hasValue?
-export function isDefined(x): boolean {  // rename to isNotNullOrUndefined(x)
+export function isDefined(x): boolean {  // rename to isNotNullOrUndefined(x), or:: notNullOrUndef
   return !isNullOrUndefined(x);
 }
 
@@ -318,6 +318,24 @@ export function deleteById(itemsWithId: any[], idToDelete) {
     }
   }
 }
+
+
+export function arr_deleteInPlace<T>(ts: T[], toDelete: T) {  // RENAME arr_delInPl + arr_delCp
+  const ix = ts.indexOf(toDelete);
+  if (ix >= 0) {
+    ts.splice(ix, 1);
+  }
+}
+
+/*
+export function arr_delete<T>(ts: T[], toDelete: T): T[] {
+  const ix = ts.indexOf(toDelete);
+  if (ix === -1)
+    return ts;
+  const clone = ts.slice();
+  clone.splice(ix, 1);
+  return clone;
+} */
 
 
 export function shallowMergeFirstItemLast(items: any[]): any {
@@ -390,6 +408,9 @@ export function $$byClass(className: string, context?): HTMLCollectionOf<Element
 
 
 export const $h = {
+  hasClass: function(elem: Element, clazz: string): boolean {
+    return elem.classList.contains(clazz);
+  },
 
   // classesString should be a space and/or comma separated class name string.
   addClasses: function(elem: Element, classesString: string) {

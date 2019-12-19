@@ -77,13 +77,13 @@ interface FragAction {
   topicType?: PageRole;
   postNr?: PostNr;
   draftNr?: DraftNr;
-  elemId?: string;
+  elemId?: string;  // COULD RENAME 'selector', since is a selelector, e.g. '#some-id'
 }
 
 
 const enum FragActionType {
   // Javascript-scrolls to show the #hash-fragment, taking the topbar height into account.
-  ScrollToElemId = 11,
+  ScrollToElemId = 11,  // COULD RENAME to ScrollToSelector
   ScrollToPost = 12,
   ScrollToLatestPost = 13,
   ReplyToPost = 21,
@@ -186,7 +186,7 @@ interface DraftLocator {
 
 interface Draft {
   byUserId: UserId;
-  draftNr: number;
+  draftNr: DraftNr;
   forWhat: DraftLocator;
   createdAt: WhenMs;
   lastEditedAt?: WhenMs;
@@ -199,15 +199,23 @@ interface Draft {
 
 
 interface Post {
+  // Client side only ------
+  // If this post / these changes don't yet exist — it's a preview.
+  isPreview?: boolean;
+  isForDraftNr?: DraftNr;
+  // If we're editing this post right now.
+  isEditing?: boolean;
+  // -----------------------
+
   uniqueId: PostId; // CLEAN_UP RENAME to id
   nr: PostNr;
   parentNr: PostNr;
   multireplyPostNrs: PostNr[];
   postType?: PostType;
   authorId: UserId;
-  createdAtMs: number;
-  approvedAtMs?: number;
-  lastApprovedEditAtMs: number;
+  createdAtMs: WhenMs;
+  approvedAtMs?: WhenMs;
+  lastApprovedEditAtMs?: WhenMs;
   numEditors: number;
   numLikeVotes: number;
   numWrongVotes: number;
@@ -280,6 +288,7 @@ interface PagePostNrId {
 interface MyPageData {
   dbgSrc?: string;
   pageId: PageId;
+  myDrafts: Draft[];
   // The user's own notification preference, for this page. Hen can change this setting.
   myPageNotfPref?: PageNotfPref;
   // Notification preferences, for the groups one is a member of, for this page. The user cannot change
@@ -801,6 +810,7 @@ interface Store extends Origins {
   rootPostId: number;
   usersByIdBrief: { [userId: number]: Participant };  // = PpsById
   pageMetaBriefById: { [pageId: string]: PageMetaBrief };
+  isEditorOpen?: boolean;  // default: false
   isWatchbarOpen: boolean;
   isContextbarOpen: boolean;
   shallSidebarsOverlayPage?: boolean;
@@ -811,9 +821,13 @@ interface Store extends Origins {
   numOnlineStrangers?: number;
   userIdsOnline?: { [userId: number]: boolean }; // this is a set; all values are true
 
+  replyPreviewsByPostId: { [postId: string]: EditPreview };
+
   // If quickUpdate is true only posts in postsToUpdate will be updated.
   quickUpdate: boolean;
   postsToUpdate: { [postId: number]: boolean };
+  // Overrides quickUpdate.
+  cannotQuickUpdate?: boolean;
 
   pagesById: { [pageId: string]: Page };
   currentPage?: Page;
@@ -1123,6 +1137,7 @@ const enum LoginReason {
   TryToAccessNotFoundPage = 14,
   SubmitEditorText = 15,
   PostEmbeddedComment = 16,  // dupl [8UKBR2AD5]
+  PostProgressNote = 17,   // REAME to PostProgressPost
 }
 
 
@@ -1271,10 +1286,21 @@ interface StorePatch {
   me?: MyselfPatch;
   tagsStuff?: TagsStuff;
 
+  setEditorOpen?: boolean;
+  updateEditPreview?: EditPreview;
+
   // If doing something resulted in a new page being created, and we should continue on that page.
   // E.g. if posting the first reply, in an embedded comments discussion (then a page for the
   // discussion gets created, lazily).
   newlyCreatedPageId?: PageId;
+}
+
+
+interface EditPreview {
+  postId: PostId;
+  postType: PostType;
+  isReplying: true;  // for now
+  safeHtml?: string;
 }
 
 

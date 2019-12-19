@@ -592,6 +592,13 @@ export function findUrlFragmentAction(hashFragment?: string): FragAction | undef
     };
   }
 
+  if (theHashFrag.indexOf(FragActionHashScrollToBottom) >= 0) {
+    return {
+      type: FragActionType.ScrollToElemId,
+      elemId: '.s_APAs',
+    };
+  }
+
   // The rest of the actions are for a specific post.
 
   const postNr: PostNr | undefined = findIntInHashFrag(FragParamPostNr, theHashFrag);
@@ -749,6 +756,20 @@ function markAnyNotificationAsSeen(postNr: number) {
     actionType: actionTypes.MarkAnyNotificationAsSeen,
     postNr: postNr,
   });
+}
+
+
+export function resumeDraft(post: Post) {
+  // Dupl code [5AKBR30W02]
+  const inclInReply = true;
+  if (eds.isInEmbeddedCommentsIframe) {
+    window.parent.postMessage(
+        JSON.stringify(['editorToggleReply', [post.parentNr, inclInReply, post.postType]]),
+        eds.embeddingOrigin);
+  }
+  else {
+    debiki2.editor.toggleWriteReplyToPostNr(post.parentNr, inclInReply, post.postType);
+  }
 }
 
 

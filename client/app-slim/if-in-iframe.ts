@@ -98,7 +98,8 @@ function onMessage(event) {
       // It opens the editor to write a reply to `postId`.
       var postNr = eventData[0];
       var inclInReply = eventData[1];
-      debiki2.editor.toggleWriteReplyToPostNr(postNr, inclInReply, PostType.Normal);
+      var postType = eventData[2] ?? PostType.Normal;
+      debiki2.editor.toggleWriteReplyToPostNr(postNr, inclInReply, postType);
       break;
     case 'handleReplyResult':
       // This message is sent from the embedded editor <iframe> to the comments
@@ -108,6 +109,7 @@ function onMessage(event) {
       d.i.handleReplyResult(eventData);
       break;
     case 'clearIsReplyingMarks':
+      ReactActions.patchTheStore({ setEditorOpen: false });
       // This is sent from the embedded editor to an embedded comments page.
       d.i.clearIsReplyingMarks();
       break;

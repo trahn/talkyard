@@ -50,6 +50,10 @@ const BodyNrStr = '1';
 const FirstReplyNr = 2;
 const NoDraftNr = 0;
 
+// Posts nrs below this, are previews of reply drafts not yet published.
+const MaxVirtPostNr = -1000 * 1000;
+const MinRealPostNr = TitleNr;
+
 const NoUserId = 0;
 const SystemUserId = 1;
 const SysbotUserId = 2;
@@ -130,11 +134,14 @@ const FragActionAndEditPost = '&editPost';
 const FragActionHashComposeTopic = '#composeTopic';
 const FragActionHashComposeMessage = '#composeDirectMessage';
 const FragActionHashScrollLatest = '#scrollToLatestPost';
+const FragActionHashScrollToBottom  = '#scrollToBottom';  // rename to ...BottomButtons?
+
 
 // The post nr param looks a bit different, '-' not '=', because it's used in urls to link to
 // posts, so nice if it uses '-' like url tend to do. Whereas the other params are more like
 // api request params to the Javascript code, so then they can look like code & url params?
 const FragParamPostNr = '#post-';
+const FragParamCommentNr = '#comment-';
 const FragParamDraftNr = '&draftNr=';
 const FragParamTopicType = '&topicType=';
 const FragParamCategoryId = '&categoryId=';

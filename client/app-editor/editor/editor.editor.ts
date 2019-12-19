@@ -80,6 +80,7 @@ export const Editor = createComponent({
       draft: null,
       draftStatus: DraftStatus.NotLoaded,
       safePreviewHtml: '',
+      anyPostType: undefined,
       replyToPostNrs: [],
       editingPostNr: null,
       editingPostUid: null,  // CLEAN_UP RENAME to ...PostId not ...Uid
@@ -338,14 +339,32 @@ export const Editor = createComponent({
     return link;
   },
 
-  toggleWriteReplyToPostNr: function(postNr: PostNr, inclInReply: boolean, anyPostType?: number) {
+  toggleWriteReplyToPostNr: function(postNr: PostNr, inclInReply: boolean,
+        anyPostType?: PostType) {
     if (this.alertBadState('WriteReply'))
       return;
 
     const store: Store = this.state.store;
+    let postNrs = this.state.replyToPostNrs;
+
+    if (inclInReply && postNrs.length) {
+      // This means we've started replying to a post, and then clicked Reply
+      // for *another* post too — i.e. we're trying to reply to more than one post,
+      // a a single time. This is, in Talkyard, called Multireply.
+      // Disable this for now — it's disabled server side, and the UX was always
+      // rather poor actually. UX COULD disable the reply buttons? Also see (5445522) just below.
+      return;
+    }
+
+    if (this.state.editorsPageId !== store.currentPageId && postNrs.length) {
+      // The post nrs on this different page, won't match the ones in postNrs.
+      // So ignore this.
+      // UX COULD disable the reply buttons? Also see (5445522) just above.
+      return;
+    }
 
     // Insert postNr into the list of posts we're replying to — or remove it, if present. (I.e. toggle.)
-    let postNrs = this.state.replyToPostNrs;
+
     const index = postNrs.indexOf(postNr);
     if (inclInReply && index >= 0) {
       // Editor out of sync with reply button states: reply button wants to add,
@@ -361,10 +380,12 @@ export const Editor = createComponent({
       this.showEditor();
     }
     else if (index === -1) {
+      // We're starting to write a reply to postNr.
       postNrs.push(postNr);
-      this.showEditor({ scrollToShowPostNr: postNr });
+      this.showEditor({ scrollToPreview: true });
     }
     else {
+      // Remove postNr — we're not going to reply to it any longer.
       postNrs.splice(index, 1);
     }
 
@@ -385,8 +406,11 @@ export const Editor = createComponent({
       return;
     }
 
+    const draftType = postType === PostType.BottomComment ?
+        DraftType.ProgressPost : DraftType.Reply;
+
     const draftLocator: DraftLocator = {
-      draftType: DraftType.Reply,
+      draftType,
       pageId: store.currentPageId,
       postNr: postNrs[0], // for now
     };
@@ -410,7 +434,7 @@ export const Editor = createComponent({
       return;
     Server.loadDraftAndText(postNr, (response: LoadDraftAndTextResponse) => {
       if (this.isGone) return;
-      this.showEditor({ scrollToShowPostNr: response.postNr });
+      this.showEditor({ scrollToPreview: true });//{ scrollToShowPostNr: response.postNr });
       const store: Store = this.state.store;
       const draft: Draft | undefined = response.draft;
 
@@ -750,10 +774,47 @@ export const Editor = createComponent({
       allowClassAndIdAttr: true, // or only if isEditingBody?
       allowDataAttr: isEditingBody
     };
-    const htmlText = markdownToSafeHtml(this.state.text, window.location.host, sanitizerOpts);
+
+    const safeHtml = markdownToSafeHtml(
+        this.state.text, window.location.host, sanitizerOpts);
+
     this.setState({
-      safePreviewHtml: htmlText
-    }, anyCallback);
+      // UX COULD save this in the draft too, & send to the server, so the preview html
+      // is available when rendering the page and one might want to see one's drafts,
+      // here: [DRAFTPRVW].
+      safePreviewHtml: safeHtml,
+    }, () => {
+      if (eds.isInEmbeddedCommentsIframe) {
+        // Send a postMessage to upd preview?
+      }
+      else {
+        const store: Store = this.state.store;
+        const page = store.pagesById[this.state.editorsPageId];
+
+        let patch;
+
+        const postNrs: PostNr[] = this.state.replyToPostNrs;
+        if (postNrs.length === 1) {
+          // Could debounce this even more:
+          // Show an inline preview, where the reply will appear.
+          const postToReplyToOrEdit = page?.postsByNr[postNrs[0]];
+          patch = store_makeNewPostPreviewPatch(
+              store, page, postToReplyToOrEdit, safeHtml, this.state.anyPostType);
+        }
+        if (this.state.editingPostUid) {
+          // Replace the real post with a copy that includes the edited html. [EDPVWPST]
+          const postToEdit = page?.postsByNr[this.state.editingPostNr];
+          if (!this.origPostBeforeEdits) {
+            this.origPostBeforeEdits = postToEdit;
+          }
+          patch = store_makeEditsPreviewPatch(store, page, postToEdit, safeHtml);
+        }
+        if (patch) {
+          ReactActions.patchTheStore(patch);
+        }
+      }
+      anyCallback?.();
+    });
   },
 
   searchForSimilarTopics: function() {
@@ -831,9 +892,14 @@ export const Editor = createComponent({
   },
 
   makeEmptyDraft: function(): Draft | undefined {
+    const anyPostType: PostType | undefined = this.state.anyPostType;
     const locator: DraftLocator = { draftType: DraftType.Scratch };
     const store: Store = this.state.store;
     let postType: PostType;
+
+    // @ifdef DEBUG
+    dieIf(!this.state.replyToPostNrs, '[TyE502KRDL35]');
+    // @endif
 
     if (this.state.editingPostNr) {
       locator.draftType = DraftType.Edit;
@@ -841,12 +907,16 @@ export const Editor = createComponent({
       locator.postId = this.state.editingPostUid;
       locator.postNr = this.state.editingPostNr;
     }
-    else if (this.state.replyToPostNrs && this.state.replyToPostNrs.length) {
-      locator.draftType = DraftType.Reply;
+    else if (this.state.replyToPostNrs?.length) {  // can remove '?.', never undef? [TyE502KRDL35]
+      // @ifdef DEBUG
+      dieIf(anyPostType !== PostType.Normal &&
+          anyPostType !== PostType.BottomComment, 'TyE25KSTJ30');
+      // @endif
+      postType = anyPostType || PostType.Normal;
+      locator.draftType = postType_toDraftType(postType);
       locator.pageId = this.state.editorsPageId;
       locator.postNr = this.state.replyToPostNrs[0]; // for now just pick the first one
       locator.postId = getPostId(store, locator.pageId, locator.postNr);
-      postType = PostType.Normal;
       // This is needed for embedded comments, if the discussion page hasn't yet been created.
       if (eds.embeddingUrl) {
         locator.embeddingUrl = eds.embeddingUrl;
@@ -936,6 +1006,8 @@ export const Editor = createComponent({
         });
         this.isSavingDraft = true;
         Server.deleteDrafts([oldDraft.draftNr], useBeacon || (() => {
+          // Patch the store: delete the draft & draft post.
+
           this.isSavingDraft = false;
           console.debug("...Deleted draft.");
           this.setState({
@@ -1038,6 +1110,7 @@ export const Editor = createComponent({
 
   saveEdits: function() {
     this.throwIfBadTitleOrText(null, t.e.PleaseDontDeleteAll);
+    delete this.origPostBeforeEdits;
     Server.saveEdits(this.state.editingPostNr, this.state.text, this.anyDraftNr(), () => {
       this.callOnDoneCallback(true);
       this.clearAndClose();
@@ -1142,18 +1215,42 @@ export const Editor = createComponent({
     // Else: the editor covers 100% anyway.
   },
 
-  showEditor: function(opts: { scrollToShowPostNr?: PostNr } = {}) {
+  showEditor: function(opts: { scrollToPreview?: true, scrollToShowPostNr?: PostNr } = {}) {
     this.makeSpaceAtBottomForEditor();
     this.setState({ visible: true });
     if (eds.isInEmbeddedEditor) {
       window.parent.postMessage(JSON.stringify(['showEditor', {}]), eds.embeddingOrigin);
     }
+
+    ReactActions.patchTheStore({ setEditorOpen: true });
+
     // After rerender, focus the input fields, and maybe need to scroll, so the post we're editing
     // or replying to, isn't occluded by the editor (then hard to know what we're editing).
     setTimeout(() => {
       if (this.isGone) return;
       this.focusInputFields();
-      this.updatePreview();
+      this.updatePreview(() => {
+        if (this.isGone) return;
+        if (opts.scrollToPreview) {
+          // The preview won't appear until a bit later, after the preview post
+          // store patch has been applied. But how know when that has happened? [SCROLLPRVW]
+          // For now:
+          setTimeout(() => {
+            if (this.isGone) return;
+            // Break out function? Also see FragActionHashScrollToBottom, tiny bit dupl code.
+            // Scroll to the preview we're currently editing (not to any inactive draft previews).
+            const isEditingBody = this.state.editingPostNr === BodyNr;
+            const selector = isEditingBody ? '.dw-ar-t > .s_T_YourPrvw' : '.s_T-Prvw-IsEd';
+            const marginTop = isEditingBody ? 110 : 50;
+            utils.scrollIntoViewInPageColumn(selector, {
+              marginTop, marginBottom: 30,
+            });
+          }, 10);
+        }
+      });
+      // COULD DELETE this, and always show a preview?, use above scrollToPreview,
+      // also when editing an existing post?
+      // However, there's a race: [SCROLLPRVW] so maybe keep this for a while?
       if (opts.scrollToShowPostNr) {
         this.scrollPostIntoView(opts.scrollToShowPostNr);
       }
@@ -1165,10 +1262,51 @@ export const Editor = createComponent({
   },
 
   clearAndClose: function(ps: { keepDraft?: true } = {}) {
+    const anyDraft: Draft = this.state.draft;
+
     if (!ps.keepDraft) {
-      const anyDraft: Draft = this.state.draft;
-      if (anyDraft)
+      if (anyDraft) {
         removeFromSessionStorage(anyDraft.forWhat);
+      }
+    }
+
+    let patch: StorePatch;
+    let highlightPostNrAfter: PostNr;
+
+    // Remove any preview post.
+    if (eds.isInEmbeddedCommentsIframe) {
+      // Send a postMessage to remove it?
+    }
+    else {
+      const store: Store = this.state.store;
+      const page = store.pagesById[this.state.editorsPageId];
+
+      const postNrs: PostNr[] = this.state.replyToPostNrs;
+      if (postNrs.length === 1) {
+        const replyingToNr = postNrs[0];
+        const post = page?.postsByNr[replyingToNr];
+        patch = anyDraft && ps.keepDraft
+            ? store_makeDraftPostPatch(store, page, anyDraft)
+            : store_makeDeletePreviewPatch(
+                store, page, post, this.state.anyPostType);
+        //const draftPreviewPost: Post = patch.postsByPageId[page.pageId][0];
+        //highlightPostNrAfter = draftPreviewPost?.nr;
+        highlightPostNrAfter = post_makePreviewIdNr(replyingToNr, this.state.anyPostType);
+      }
+
+      if (this.state.editingPostUid) {
+        const origPostBeforeEdits = this.origPostBeforeEdits;
+        delete this.origPostBeforeEdits;
+        if (origPostBeforeEdits) {
+          highlightPostNrAfter = origPostBeforeEdits.nr;
+          patch = {
+            pageVersionsByPageId: {},
+            postsByPageId: {},
+          };
+          patch.postsByPageId[page.pageId] = [origPostBeforeEdits];
+          patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
+        }
+      }
     }
 
     this.returnSpaceAtBottomForEditor();
@@ -1202,8 +1340,15 @@ export const Editor = createComponent({
     }
     else {
       // (Old jQuery based code.)
-      $h.removeClasses($all('.dw-replying'), 'dw-replying');
+      $h.removeClasses($all('.dw-replying'), 'dw-replying');  // GAAAAH
     }
+
+    patch = { ...patch, setEditorOpen: false };
+    ReactActions.patchTheStore(patch);
+    // And then, later:
+    setTimeout(() => {
+      highlightPostNrBrieflyIfThere(highlightPostNrAfter);
+    }, 200);
   },
 
   callOnDoneCallback: function(saved: boolean) {
