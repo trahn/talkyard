@@ -426,7 +426,7 @@ describe("api-upsert-pages   TyT603PKRAEPGJ5", () => {
   it("... but no one else", () => {
     const { num, addrsByTimeAsc } = server.getEmailsSentToAddrs(siteId);
     const oneEmailToMaja = 1;
-    assert.eq(num + 666, oneEmailToMaja, `Emails sent to: ${addrsByTimeAsc}`);
+    assert.eq(num, oneEmailToMaja, `Emails sent to: ${addrsByTimeAsc}`);
   });
 
   it("Owen returns to the category", () => {
