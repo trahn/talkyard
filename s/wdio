@@ -1,6 +1,6 @@
 #!/bin/bash
 
-while true
+for x in {1..9}
 do
   if [ -f "$1" ]; then
     break
