@@ -340,8 +340,16 @@ function pagesFor(browser) {
     },
 
 
-    numBrowserTabs: (): number => {
-      return browser.getTabIds().length;
+    waitForMinBrowserTabs: (howMany: number) => {
+      browser.waitUntil(function () {
+        return browser.getTabIds().length >= howMany;
+      });
+    },
+
+    waitForMaxBrowserTabs: (howMany: number) => {
+      browser.waitUntil(function () {
+        return browser.getTabIds().length <= howMany;
+      });
     },
 
 
@@ -904,9 +912,31 @@ function pagesFor(browser) {
             // Can this happen? Perhaps if elem not on screen?
             return false;
           }
+
+          // Found elem directly, or found a nested elem inside?
           if (elem == elemAtTopOfCenter || elem.contains(elemAtTopOfCenter)) {
             return true;
           }
+
+          // Found an ancestor?
+          // Then, if the elem is display: inline, likely it's is e.g. an <a href=...>
+          // link that line breaks, in a way so that the middle of its bounding rect
+          // happens to be empty — when we look in its "middle", we see its parent
+          // instead. If so, the elem is most likely not occluded.
+          var maybeWeird = '';
+          if (elemAtTopOfCenter.contains(elem)) {
+            var elemStyles = window.getComputedStyle(elem);
+            var displayHow = elemStyles.getPropertyValue('display');
+            if (displayHow === 'inline') {
+              return true;
+            }
+            else {
+              // This would be really weird — how is it possible to see a block elem's
+              // ancestor at the top, when looking at the middle of the block elem?
+              maybeWeird = " Weird! [TyM306RDE24]";
+            }
+          }
+
           var elemIdClass =
               (elemAtTopOfCenter.id ? '#' + elemAtTopOfCenter.id : '') +
               (elemAtTopOfCenter.className ? '.' + elemAtTopOfCenter.className : '');
@@ -914,7 +944,7 @@ function pagesFor(browser) {
             return true;
           }
           // Return the id/class of the thing that occludes 'elem'.
-          return elemIdClass;
+          return elemIdClass + maybeWeird;
         }, selector, opts.okayOccluders);
 
         dieIf(!result, "Error checking if elem interactable, result: " + JSON.stringify(result));
@@ -2071,9 +2101,7 @@ function pagesFor(browser) {
         }
         api.loginDialog.tryLogin(username, password);
         // The popup auto closes after login.
-        browser.waitUntil(function () {
-          return browser.getTabIds().length === 1;
-        });
+        api.waitForMaxBrowserTabs(1);
         api.switchBackToFirstTabOrWindow();
       },
 
