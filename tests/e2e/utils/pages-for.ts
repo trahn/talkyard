@@ -4263,10 +4263,11 @@ function pagesFor(browser) {
       groupMembers: {
         goHere: (username: string, ps: { isGroup?: true, origin?: string } = {}) => {
           api.userProfilePage._goHere(username, ps, '/members');
+          api.userProfilePage.groupMembers.waitUntilLoaded();
         },
 
         waitUntilLoaded: () => {
-          api.waitForExist('.s_G_Mbrs');
+          api.waitForExist('.s_G_Mbrs, .s_G_Mbrs-Dnd');
         },
 
         waitUntilMemberPresent: (username: string) => {
