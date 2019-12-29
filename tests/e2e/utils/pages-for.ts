@@ -93,6 +93,7 @@ function pagesFor(browser) {
   const origWaitForEnabled = browser.waitForEnabled;
   const origWaitForText = browser.waitForText;
   const origWaitForExist = browser.waitForExist;
+  const origGetText = browser.getText;
   const origRefresh = browser.refresh;
 
   const hostsVisited = {};
@@ -705,6 +706,21 @@ function pagesFor(browser) {
       origWaitForText.apply(browser, arguments);
     },
 
+    getWholePageJsonStrAndObj: (): [string, any] => {
+      // Chrome: The browser wraps the json response in a <html><body><pre> tag.
+      // Firefox: Shows pretty json with expand/collapse sub trees buttons,
+      // and we need click a #rawdata-tab to get a <pre> with json text to copy.
+      return utils.tryManyTimes("copy json", 3, () => {
+        api.waitForVisible('#rawdata-tab, pre');
+        if (browser.isVisible('#rawdata-tab')) {
+          api.waitAndClick('#rawdata-tab');
+        }
+        const jsonStr: string = api.waitAndGetText('pre');
+        const obj: any = JSON.parse(jsonStr);
+        return [jsonStr, obj];
+      });
+    },
+
     waitUntilValueIs: function(selector: string, value: string) {
       browser.waitForVisible(selector);
       while (true) {
@@ -1182,6 +1198,20 @@ function pagesFor(browser) {
     },
 
 
+    getText: (selector: string): string => {  // RENAME to waitAndGetText
+                                              // and thereafter, die(...) in api.getText().
+      return api.waitAndGetText.apply(browser, arguments);
+    },
+
+
+    waitAndGetText: (selector: string): string => {
+      // Maybe not visible, if empty text? So use  waitForExist() here — and,
+      // in waitAndGetVisibleText() just below, we waitForVisible() instead.
+      api.waitForExist(selector);
+      return origGetText.apply(browser, arguments);
+    },
+
+
     waitAndGetVisibleText: function(selector) {
       api.waitForVisible(selector);
       api.waitForText(selector);
@@ -1606,8 +1636,7 @@ function pagesFor(browser) {
       },
 
       getMyUsername: function() {
-        browser.waitForVisible('.esMyMenu .esAvtrName_name');
-        return browser.getText('.esMyMenu .esAvtrName_name');
+        return api.waitAndGetText('.esMyMenu .esAvtrName_name');
       },
 
       clickLogin: function() {
@@ -2157,8 +2186,7 @@ function pagesFor(browser) {
         api.loginDialog.waitForAndCloseWelcomeLoggedInDialog();
         logMessage('createPasswordAccount with no email: done');
         // Took forever: waitAndGetVisibleText, [CHROME_60_BUG]?
-        api.waitForVisible('.esTopbar .esAvtrName_name');
-        const nameInHtml = browser.getText('.esTopbar .esAvtrName_name');
+        const nameInHtml = api.waitAndGetText('.esTopbar .esAvtrName_name');
         assert(nameInHtml === username);
       },
 
@@ -3153,7 +3181,7 @@ function pagesFor(browser) {
       },
 
       getText: function() {
-        return browser.getText('.editor-area textarea');
+        return api.waitAndGetText('.editor-area textarea');
       },
 
       setTopicType: function(type: PageRole) {
@@ -3482,7 +3510,7 @@ function pagesFor(browser) {
       },
 
       getTopicAuthorUsernameInclAt: function(): string {
-        return browser.getText('.dw-ar-p-hd .esP_By_U');
+        return api.waitAndGetText('.dw-ar-p-hd .esP_By_U');
       },
 
       clickReplyToOrigPost: function(whichButton?: 'DiscussionSection') {
@@ -3983,8 +4011,7 @@ function pagesFor(browser) {
       },
 
       getChatInputText: function(): string {
-        browser.waitForVisible('.esC_Edtr_textarea');
-        return browser.getText('.esC_Edtr_textarea');
+        return api.waitAndGetText('.esC_Edtr_textarea');
       },
 
       waitForDraftSaved: function() {
@@ -4578,8 +4605,7 @@ function pagesFor(browser) {
 
         emailsLogins: {   // RENAME to `account`
           getEmailAddress: function() {
-            api.waitForVisible('.s_UP_EmLg_EmL_It_Em');
-            return browser.getText('.s_UP_EmLg_EmL_It_Em');
+            return api.waitAndGetVisibleText('.s_UP_EmLg_EmL_It_Em');
           },
 
           waitUntilEmailAddressListed: function(addrRegexStr: string,
@@ -4913,8 +4939,7 @@ function pagesFor(browser) {
           },
 
           createSaveEmbeddingPage: (ps: { urlPath: string, discussionId?: string }) => {
-            browser.waitForVisible('#e_EmbCmtsHtml');
-            const htmlToPaste = browser.getText('#e_EmbCmtsHtml');
+            const htmlToPaste = api.waitAndGetVisibleText('#e_EmbCmtsHtml');
             const pageHtml = utils.makeEmbeddedCommentsHtml({
                 htmlToPaste, discussionId: ps.discussionId,
                 pageName: ps.urlPath, color: 'black', bgColor: '#a359fc' });
