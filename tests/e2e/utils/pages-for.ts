@@ -366,8 +366,9 @@ function pagesFor(browser) {
       for (let i = 0; i < ids.length; ++i) {
         const id = ids[i];
         if (id !== currentId) {
-          logMessage("Calling browser.switchTab(id), id = " + id);
+          logMessage(`Calling browser.switchTab(id), id = ${id}...`);
           browser.switchTab(id);
+          logMessage(`... done, current tab id is now: ${browser.getCurrentTabId()}.`);
           return;
         }
       }
@@ -2474,7 +2475,11 @@ function pagesFor(browser) {
 
       createLinkedInAccount: function(ps: { email: string, password: string, username: string,
         shallBecomeOwner: boolean, alreadyLoggedInAtLinkedIn: boolean }) {
-        api.loginDialog.loginWithLinkedIn({ email: ps.email, password: ps.password });
+        api.loginDialog.loginWithLinkedIn({
+          email: ps.email,
+          password: ps.password,
+          alreadyLoggedIn: ps.alreadyLoggedInAtLinkedIn,
+        });
         // This should be the first time we login with LinkedInd at this site, so we'll be asked
         // to choose a username.
         // Not just #e2eUsername, then might try to fill in the username in the create-password-
@@ -2492,13 +2497,14 @@ function pagesFor(browser) {
       },
 
 
-      loginWithLinkedIn: function(data: { email: string, password: string }, isInPopupAlready?: boolean) {
+      loginWithLinkedIn: function(data: { email: string, password: string,
+            alreadyLoggedIn?: boolean, isInPopupAlready?: boolean }) {
         // Pause or sometimes the click misses the button. Is the browser doing some re-layout?
         browser.pause(100);
         api.waitAndClick('#e2eLoginLinkedIn');
 
         // Switch to LinkedIn's login popup window.
-        if (!isInPopupAlready)
+        if (!data.isInPopupAlready)
           api.swithToOtherTabOrWindow();
 
         // Wait until popup window done loading.
@@ -2548,7 +2554,7 @@ function pagesFor(browser) {
           logAndDie.logException(ex);
         }
 
-        if (!isInPopupAlready) {
+        if (!data.isInPopupAlready) {
           logMessage("switching back to first tab...");
           api.switchBackToFirstTabOrWindow();
         }
