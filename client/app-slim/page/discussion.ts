@@ -1640,7 +1640,20 @@ export const PostHeader = createComponent({
         r.span({ className: 's_P_H_Unr icon-circle' });
 
     const isPageBody = post.nr === BodyNr;
-    const by = isPageBody ? t.d.By : '';
+
+    // If we start composing a reply, before having logged in, then, `author` will
+    // be missing.
+    const skipName = author.isMissing;  // Maybe show "you" as placeholder name?
+    // @ifdef DEBUG
+    dieIf(skipName && !post.isPreview && !post.isForDraftNr,
+        `Author missing, but not preview: ${JSON.stringify(post)} [TyE306RKD2RF]`);
+    // @endif
+
+    const by = isPageBody && !skipName ? t.d.By : '';
+    const userName = skipName ? null :
+        UserName({ user: author, store, makeLink: !abbreviate,
+            onClick: abbreviate ? undefined : this.onUserClick });
+
     const isBodyPostClass = isPageBody ? ' dw-ar-p-hd' : '';
 
     const is2dColumn = page.horizontalLayout && this.props.depth === 1;
@@ -1676,8 +1689,7 @@ export const PostHeader = createComponent({
           anySolutionIcon,
           anyAvatar,
           by,
-          UserName({ user: author, store, makeLink: !abbreviate,
-              onClick: abbreviate ? undefined : this.onUserClick }),
+          userName,
           // COULD add "Posted on ..." tooltip.
           post.isPreview ? null : (
             this.props.exactTime ?
@@ -1725,8 +1737,9 @@ export const PostBody = createComponent({
     const post: Post = this.props.post;
 
     // @ifdef DEBUG
-    dieIf(isNullOrUndefined(post.sanitizedHtml) &&
-        isNullOrUndefined(post.unsafeSource), 'TyE35RK3JH5');
+    dieIf(!post.isBodyHidden && !post_isDeletedOrCollapsed(post) &&
+        isNullOrUndefined(post.sanitizedHtml) &&
+        isNullOrUndefined(post.unsafeSource), `No text: ${toStr(post)} [TyE35RK3JH5]`);
 
     dieIf(post.isForDraftNr && isNullOrUndefined(post.unsafeSource), 'TyE2KSTH047A');
 

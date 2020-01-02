@@ -79,6 +79,12 @@ function doNextFrameOrNow(something: () => void) {
    namespace debiki2 {
 //------------------------------------------------------------------------------
 
+// @ifdef DEBUG
+export function toStr(x: any, indentation: number = 2): string {
+  return JSON.stringify(x, undefined, indentation);
+}
+// @endif
+
 
 // If in an embedded comments iframe.
 export let iframeOffsetWinSize: IframeOffsetWinSize | undefined;
