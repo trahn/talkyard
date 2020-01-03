@@ -198,6 +198,25 @@ interface Draft {
 }
 
 
+interface ShowEditsPreviewParams {
+  safeHtml: string;
+  editorsPageId?: PageId;
+  anyPostType?: PostType;
+  replyToNr?: PostNr;
+  editingPostNr?: PostNr;
+}
+
+
+interface RemoveEditsPreviewParams {
+  anyDraft?: Draft,
+  keepDraft: boolean,
+  editorsPageId?: PageId;
+  anyPostType?: PostType;
+  replyToNr?: PostNr;
+  editingPostNr?: PostNr;
+}
+
+
 interface Post {
   // Client side only ------
   // If this post / these changes don't yet exist — it's a preview.

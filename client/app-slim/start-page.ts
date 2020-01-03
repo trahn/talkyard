@@ -335,6 +335,11 @@ function renderPageInBrowser() {
 
 
 function registerServiceWorkerWaitForSameVersion() {  // [REGSW]
+  // Should be enough to listen only from the main iframe. It can send messages
+  // to any editor iframe, if needed.
+  if (eds.isInEmbeddedEditor)
+    return;
+
   if (!eds.useServiceWorker) {
     if (eds.wantsServiceWorker) {
       console.warn("Cannot use any service worker — they require HTTPS or http://localhost, " +
@@ -357,7 +362,9 @@ function registerServiceWorkerWaitForSameVersion() {  // [REGSW]
   // the XSS problem. See:
   // https://github.com/w3c/ServiceWorker/issues/940#issuecomment-280964703
   //
-  navigator.serviceWorker.register(`/talkyard-service-worker.${eds.minMaxJs}`)
+  const embeddedOriginorEmpty = eds.isInIframe ? location.origin : '';
+  const scriptUrl = `${embeddedOriginorEmpty}/talkyard-service-worker.${eds.minMaxJs}`;
+  navigator.serviceWorker.register(scriptUrl)
       .then(function(registration) {
         console.log("Service worker registered. [TyMSWREGOK]");
         registration.onupdatefound = function() {

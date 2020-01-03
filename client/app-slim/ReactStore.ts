@@ -512,9 +512,27 @@ ReactStore.activateMyself = function(anyNewMe: Myself) {
     me.marksByPostId = _.clone(myPageData.marksByPostId);
   }
 
+  addLocalStorageDataTo(anyNewMe || store.me);
+
+  // Show one's drafts: Create a preview post, for each new post draft (but not
+  // for edit drafts — then, we instead show a text "Unfinished edits" next to the
+  // edit button. [UFINEDT])
+  // (Do this also if not logged in — because there might still be drafts in one's
+  // browser local sessionStorage.)
+  if (!eds.isInEmbeddedEditor) {
+    _.each(myPageData.myDrafts, (draft: Draft) => {
+      const draftType = draft.forWhat.draftType;
+      if (draftType === DraftType.Reply || draftType === DraftType.ProgressPost) {
+        const post: Post | null = store_makePostForDraft(store, draft);
+        if (post) {
+          updatePost(post, store.currentPageId);
+        }
+        // COULD_FREE_MEM
+      }
+    });
+  }
+
   if (!anyNewMe) {
-    // For now only. Later on, this data should be kept server side instead?
-    addLocalStorageDataTo(store.me);
     debiki2.pubsub.subscribeToServerEvents(store.me);
     this.emitChange();
     return;
@@ -557,7 +575,7 @@ ReactStore.activateMyself = function(anyNewMe: Myself) {
 
   store.user = newMe; // try to remove the .user field, use .me instead
   store.me = newMe;
-  addLocalStorageDataTo(store.me);
+
   theStore_addOnlineUser(me_toBriefUser(newMe));
 
   watchbar_markAsRead(store.me.watchbar, store.currentPageId);
@@ -570,20 +588,6 @@ ReactStore.activateMyself = function(anyNewMe: Myself) {
 
   _.each(myPageData.unapprovedPostAuthors, (author: BriefUser) => {
     store.usersByIdBrief[author.id] = author;
-  });
-
-  // Show one's drafts: Create a preview post, for each new post draft (but not
-  // for edit drafts — then, we instead show a text "Unfinished edits" next to the
-  // edit button. [UFINEDT])
-  _.each(myPageData.myDrafts, (draft: Draft) => {
-    const draftType = draft.forWhat.draftType;
-    if (draftType === DraftType.Reply || draftType === DraftType.ProgressPost) {
-      const post: Post | null = store_makePostForDraft(store, draft);
-      if (post) {
-        updatePost(post, store.currentPageId);
-      }
-      // COULD_FREE_MEM
-    }
   });
 
   if (_.isArray(store.topics)) {
@@ -654,7 +658,7 @@ function addRestrictedCategories(restrictedCategories: Category[], categories: C
 }
 
 
-ReactStore.allData = function() {
+ReactStore.allData = function(): Store {
   return store;
 };
 
@@ -1679,6 +1683,28 @@ function addLocalStorageDataTo(me: Myself) {
     const sessionWatchbar = loadWatchbarFromSessionStorage();
     me.watchbar[WatchbarSection.SubCommunities] = sessionWatchbar[WatchbarSection.SubCommunities];
     me.watchbar[WatchbarSection.RecentTopics] = sessionWatchbar[WatchbarSection.RecentTopics];
+  }
+
+  // Any drafts in session storage? Wrap in try-catch in case browser privacy
+  // settings forbids using sessionStorage.
+  try {
+    // TESTS_MISSING
+    Object.keys(sessionStorage).forEach(keyStr => {
+      if (keyStr.indexOf('embeddingUrl') >= 0) {
+        const locator: DraftLocator = JSON.parse(keyStr);
+        if (locator.embeddingUrl === eds.embeddingUrl) {
+          const draftStr = sessionStorage.getItem(keyStr);
+          const draft = JSON.parse(draftStr);
+          me.myCurrentPageData.myDrafts.push(draft);
+        }
+      }
+    });
+  }
+  catch (ex) {
+    // @ifdef DEBUG
+    console.debug(`Cannot access sessionStorage?`, ex)
+    // @endif
+    void 0; // [macro-bug], messes up file if 'endif' just before '}'
   }
 
   if (!store.currentPageId)

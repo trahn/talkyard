@@ -122,6 +122,9 @@ export function dieIf(condition, errorMessage: string) {
 
 export function logError(errorMessage: string) {
   // Why setTimeout()? I don't remember, see above in die(errorMessage).
+  // @ifdef DEBUG
+  debugger;
+  // @endif
   setTimeout(() => {
     debiki2['Server'].logError(errorMessage);
   });

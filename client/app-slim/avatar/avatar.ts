@@ -152,7 +152,10 @@ export const Avatar = createComponent({
 
   render: function() {
     const user: BriefUser | MemberInclDetails = this.props.user;
-    const ignoreClicks = this.props.ignoreClicks || user.isMissing;
+    const ignoreClicks = this.props.ignoreClicks ||
+        // The user is unknow when rendering the author avatar, in
+        // the new reply preview, if we haven't logged in.
+        user.id === UnknownUserId;
 
     // One or more of these might be undefined, even if the user has an avatar:
     // hash paths for only *some* avatar sizes are included.

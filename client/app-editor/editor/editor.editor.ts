@@ -434,7 +434,7 @@ export const Editor = createComponent({
       return;
     Server.loadDraftAndText(postNr, (response: LoadDraftAndTextResponse) => {
       if (this.isGone) return;
-      this.showEditor({ scrollToPreview: true });//{ scrollToShowPostNr: response.postNr });
+      this.showEditor({ scrollToPreview: true });
       const store: Store = this.state.store;
       const draft: Draft | undefined = response.draft;
 
@@ -553,6 +553,8 @@ export const Editor = createComponent({
   },
 
   scrollPostIntoView: function(postNr) {
+    // send message to iframe parent?
+
     const postElem = $byId('post-' + postNr);
     // There's no pots-1 = BodyNr in embedded comments discussions (there's a blog
     // article instead, on the embedding page).
@@ -766,7 +768,10 @@ export const Editor = createComponent({
   },
 
   updatePreview: function(anyCallback?) {
-    if (this.isGone) return;
+    // This function is debounce-d, so the editor might have been cleared
+    // and closed already, or even unmounted.
+    if (this.isGone || !this.state.visible)
+      return;
 
     // (COULD verify still edits same post/thing, or not needed?)
     const isEditingBody = this.state.editingPostNr === BodyNr;
@@ -784,35 +789,23 @@ export const Editor = createComponent({
       // here: [DRAFTPRVW].
       safePreviewHtml: safeHtml,
     }, () => {
-      if (eds.isInEmbeddedCommentsIframe) {
-        // Send a postMessage to upd preview?
-      }
-      else {
-        const store: Store = this.state.store;
-        const page = store.pagesById[this.state.editorsPageId];
+      const params: ShowEditsPreviewParams = {
+        safeHtml,
+        editorsPageId: this.state.editorsPageId,
+      };
 
-        let patch;
-
-        const postNrs: PostNr[] = this.state.replyToPostNrs;
-        if (postNrs.length === 1) {
-          // Could debounce this even more:
-          // Show an inline preview, where the reply will appear.
-          const postToReplyToOrEdit = page?.postsByNr[postNrs[0]];
-          patch = store_makeNewPostPreviewPatch(
-              store, page, postToReplyToOrEdit, safeHtml, this.state.anyPostType);
-        }
-        if (this.state.editingPostUid) {
-          // Replace the real post with a copy that includes the edited html. [EDPVWPST]
-          const postToEdit = page?.postsByNr[this.state.editingPostNr];
-          if (!this.origPostBeforeEdits) {
-            this.origPostBeforeEdits = postToEdit;
-          }
-          patch = store_makeEditsPreviewPatch(store, page, postToEdit, safeHtml);
-        }
-        if (patch) {
-          ReactActions.patchTheStore(patch);
-        }
+      const postNrs: PostNr[] = this.state.replyToPostNrs;
+      if (postNrs.length === 1) {
+        params.replyToNr = postNrs[0];
+        params.anyPostType = this.state.anyPostType;
       }
+
+      if (this.state.editingPostUid) {
+        params.editingPostNr = this.state.editingPostNr;
+      }
+
+      ReactActions.showEditsPreview(params);
+
       anyCallback?.();
     });
   },
@@ -854,7 +847,8 @@ export const Editor = createComponent({
     }
 
     Server.search(this.state.title, (searchResults: SearchResults) => {
-      if (this.isGone) return;
+      if (this.isGone || !this.state.visible)
+        return;
       // Exclude category description pages — they're off-topic, here. Also don't show
       // forum topic index pages or blog post list pages. (Such pages are typically
       // *not* answers to a question we're asking.)
@@ -963,7 +957,8 @@ export const Editor = createComponent({
     this.saveDraftNow(undefined, UseBeacon);
   },
 
-  saveDraftNow: function(callbackThatClosesEditor: () => void | undefined, useBeacon?: UseBeacon) {
+  saveDraftNow: function(callbackThatClosesEditor: (draft?: Draft) => void,
+      useBeacon?: UseBeacon) {
     // Tested here: 7WKABZP2
     // A bit dupl code [4ABKR2J0]
 
@@ -978,7 +973,7 @@ export const Editor = createComponent({
 
     if (!draftOldOrEmpty || draftStatus <= DraftStatus.NeedNotSave) {
       if (callbackThatClosesEditor) {
-        callbackThatClosesEditor();
+        callbackThatClosesEditor(oldDraft);
       }
       return;
     }
@@ -1015,12 +1010,13 @@ export const Editor = createComponent({
             draftStatus: DraftStatus.Deleted,
           });
           if (callbackThatClosesEditor) {
-            callbackThatClosesEditor();
+            callbackThatClosesEditor();  // not needed? see just below
+               // hmm bbut saveDraftClearAndClose will try to save the draft?
           }
         }), useBeacon || this.setCannotSaveDraft);
       }
       if (callbackThatClosesEditor) {
-        callbackThatClosesEditor();
+        callbackThatClosesEditor();  // how make this delete the draft?
       }
       return;
     }
@@ -1042,7 +1038,7 @@ export const Editor = createComponent({
     if (saveInSessionStorage) {
       putInSessionStorage(draftToSave.forWhat, draftToSave);
       if (callbackThatClosesEditor) {
-        callbackThatClosesEditor();
+        callbackThatClosesEditor(draftToSave);
       }
       return;
     }
@@ -1060,7 +1056,7 @@ export const Editor = createComponent({
         draftStatus: DraftStatus.Saved,
       });
       if (callbackThatClosesEditor) {
-        callbackThatClosesEditor();
+        callbackThatClosesEditor(draftWithNr);
       }
     }), useBeacon || this.setCannotSaveDraft);
   },
@@ -1219,10 +1215,12 @@ export const Editor = createComponent({
     this.makeSpaceAtBottomForEditor();
     this.setState({ visible: true });
     if (eds.isInEmbeddedEditor) {
+      // 112233
       window.parent.postMessage(JSON.stringify(['showEditor', {}]), eds.embeddingOrigin);
     }
 
-    ReactActions.patchTheStore({ setEditorOpen: true });
+    // 112233
+    ReactActions.patchTheStore({ setEditorOpen: true });  // oopss, send to comments iframe
 
     // After rerender, focus the input fields, and maybe need to scroll, so the post we're editing
     // or replying to, isn't occluded by the editor (then hard to know what we're editing).
@@ -1231,7 +1229,7 @@ export const Editor = createComponent({
       this.focusInputFields();
       this.updatePreview(() => {
         if (this.isGone) return;
-        if (opts.scrollToPreview) {
+        if (opts.scrollToPreview) {  // oops, do in comments iframe  // 112233
           // The preview won't appear until a bit later, after the preview post
           // store patch has been applied. But how know when that has happened? [SCROLLPRVW]
           // For now:
@@ -1248,7 +1246,7 @@ export const Editor = createComponent({
           }, 10);
         }
       });
-      // COULD DELETE this, and always show a preview?, use above scrollToPreview,
+      // COULD DELETE this, and always show a preview?, use above scrollToPreview,  // 112233
       // also when editing an existing post?
       // However, there's a race: [SCROLLPRVW] so maybe keep this for a while?
       if (opts.scrollToShowPostNr) {
@@ -1258,56 +1256,36 @@ export const Editor = createComponent({
   },
 
   saveDraftClearAndClose: function() {
-    this.saveDraftNow(() => this.clearAndClose({ keepDraft: true }));
+    this.saveDraftNow(
+        (upToDateDraft?: Draft) => this.clearAndClose({ keepDraft: true, upToDateDraft }));
   },
 
-  clearAndClose: function(ps: { keepDraft?: true } = {}) {
-    const anyDraft: Draft = this.state.draft;
+  clearAndClose: function(ps: { keepDraft?: true, upToDateDraft?: Draft } = {}) {
+    const anyDraft: Draft = ps.upToDateDraft || this.state.draft;
 
     if (!ps.keepDraft) {
       if (anyDraft) {
-        removeFromSessionStorage(anyDraft.forWhat);
+        removeFromSessionStorage(anyDraft.forWhat);  // move to comments win
       }
     }
 
-    let patch: StorePatch;
-    let highlightPostNrAfter: PostNr;
+    const params: RemoveEditsPreviewParams = {
+      anyDraft,
+      keepDraft: ps.keepDraft,
+      editorsPageId: this.state.editorsPageId,
+    };
 
-    // Remove any preview post.
-    if (eds.isInEmbeddedCommentsIframe) {
-      // Send a postMessage to remove it?
+    const postNrs: PostNr[] = this.state.replyToPostNrs;
+    if (postNrs.length === 1) {
+      params.replyToNr = postNrs[0];
+      params.anyPostType = this.state.anyPostType;
     }
-    else {
-      const store: Store = this.state.store;
-      const page = store.pagesById[this.state.editorsPageId];
 
-      const postNrs: PostNr[] = this.state.replyToPostNrs;
-      if (postNrs.length === 1) {
-        const replyingToNr = postNrs[0];
-        const post = page?.postsByNr[replyingToNr];
-        patch = anyDraft && ps.keepDraft
-            ? store_makeDraftPostPatch(store, page, anyDraft)
-            : store_makeDeletePreviewPatch(
-                store, page, post, this.state.anyPostType);
-        //const draftPreviewPost: Post = patch.postsByPageId[page.pageId][0];
-        //highlightPostNrAfter = draftPreviewPost?.nr;
-        highlightPostNrAfter = post_makePreviewIdNr(replyingToNr, this.state.anyPostType);
-      }
-
-      if (this.state.editingPostUid) {
-        const origPostBeforeEdits = this.origPostBeforeEdits;
-        delete this.origPostBeforeEdits;
-        if (origPostBeforeEdits) {
-          highlightPostNrAfter = origPostBeforeEdits.nr;
-          patch = {
-            pageVersionsByPageId: {},
-            postsByPageId: {},
-          };
-          patch.postsByPageId[page.pageId] = [origPostBeforeEdits];
-          patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
-        }
-      }
+    if (this.state.editingPostUid) {
+      params.editingPostNr = this.state.editingPostNr;
     }
+
+    ReactActions.removeEditsPreview(params);  // Merge this (112233), ...
 
     this.returnSpaceAtBottomForEditor();
     this.setState({
@@ -1334,7 +1312,8 @@ export const Editor = createComponent({
       guidelines: null,
       backdropOpacity: 0,
     });
-    // Remove any is-replying highlights.
+
+    // Remove any is-replying highlights.    // and this (112233), ...
     if (eds.isInEmbeddedEditor) {
       window.parent.postMessage(JSON.stringify(['hideEditor', {}]), eds.embeddingOrigin);
     }
@@ -1343,12 +1322,7 @@ export const Editor = createComponent({
       $h.removeClasses($all('.dw-replying'), 'dw-replying');  // GAAAAH
     }
 
-    patch = { ...patch, setEditorOpen: false };
-    ReactActions.patchTheStore(patch);
-    // And then, later:
-    setTimeout(() => {
-      highlightPostNrBrieflyIfThere(highlightPostNrAfter);
-    }, 200);
+    ReactActions.patchTheStore({ setEditorOpen: false });   // and this (112233) into one?
   },
 
   callOnDoneCallback: function(saved: boolean) {

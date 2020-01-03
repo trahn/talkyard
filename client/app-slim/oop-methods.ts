@@ -785,7 +785,7 @@ export function store_makePostForDraft(store: Store, draft: Draft): Post | null 
 
   const previewPost = store_makePreviewPost({
       store, parentPostNr, unsafeSource: draft.text, newPostType: postType,
-      isForDraftNr: draft.draftNr });
+      isForDraftNr: draft.draftNr || true });
   return previewPost;
 }
 
@@ -796,7 +796,9 @@ interface MakePreviewParams {
   safePreviewHtml?: string;
   unsafeSource?: string;
   newPostType?: PostType;
-  isForDraftNr?: DraftNr;
+  // Is true if the draft nr hasn't yet been decided (drafts in sessionStorage
+  // haven't yet been assigned a draft nr by the server).
+  isForDraftNr?: DraftNr | true;
   isEditing?: boolean;
 }
 

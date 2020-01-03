@@ -122,6 +122,12 @@ function onMessage(event) {
       // This is sent from the embedded editor back to an embedded comments page.
       debiki2.ReactActions.handleEditResult(eventData);
       break;
+    case 'showEditsPreview':
+      ReactActions.showEditsPreview(eventData);
+      break;
+    case 'removeEditsPreview':
+      ReactActions.removeEditsPreview(eventData);
+      break;
     case 'iframeOffsetWinSize':
       debiki2.iframeOffsetWinSize = eventData;
       break;

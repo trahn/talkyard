@@ -87,9 +87,8 @@ export function loadMyself(afterwardsCallback?) {
       const mainWin = getMainWin();
       const typs: PageSession = mainWin.typs;
       const weakSessionId = typs.weakSessionId;
-      window.parent.postMessage(JSON.stringify([
-        'justLoggedIn', { user, weakSessionId, pubSiteId: eds.pubSiteId }]),  // [JLGDIN]
-        eds.embeddingOrigin);
+      sendToCommentsIframe([
+        'justLoggedIn', { user, weakSessionId, pubSiteId: eds.pubSiteId }]);  // [JLGDIN]
     }
     setNewMe(user);
     if (afterwardsCallback) {
@@ -125,7 +124,7 @@ export function logoutClientSideOnly() {
   });
   if (eds.isInEmbeddedCommentsIframe) {
     // Tell the editor iframe that we've logged out.
-    window.parent.postMessage(JSON.stringify(['logoutClientSideOnly', null]), eds.embeddingOrigin);
+    sendToEditorIframe(['logoutClientSideOnly', null]);
   }
   // Abort any long polling request, so we won't receive data, for this user, after we've
   // logged out: (not really needed, because we reload() below)
@@ -522,8 +521,7 @@ export function doUrlFragmentAction(newHashFragment?: string) {
         // CLEAN_UP Dupl code [5AKBR30W02]
         // Break out debiki2.ReactActions.editReplyTo(postNr)  action?
         if (eds.isInEmbeddedCommentsIframe) {
-          window.parent.postMessage(
-              JSON.stringify(['editorToggleReply', [postNr, true]]), eds.embeddingOrigin);
+          sendToEditorIframe(['editorToggleReply', [postNr, true]]);
         }
         else {
           // Normal = incl in draft + url?
@@ -763,13 +761,124 @@ export function resumeDraft(post: Post) {
   // Dupl code [5AKBR30W02]
   const inclInReply = true;
   if (eds.isInEmbeddedCommentsIframe) {
-    window.parent.postMessage(
-        JSON.stringify(['editorToggleReply', [post.parentNr, inclInReply, post.postType]]),
-        eds.embeddingOrigin);
+    sendToEditorIframe(['editorToggleReply', [post.parentNr, inclInReply, post.postType]]);
   }
   else {
     debiki2.editor.toggleWriteReplyToPostNr(post.parentNr, inclInReply, post.postType);
   }
+}
+
+
+let origPostBeforeEdits: Post | undefined;
+
+
+export function showEditsPreview(ps: ShowEditsPreviewParams) {
+  // @ifdef DEBUG
+  dieIf(!ps.replyToNr && !ps.editingPostNr, 'TyE5WKDAW25');
+  dieIf(ps.replyToNr && ps.editingPostNr, 'TyE73KGTD02');
+  // @endif
+
+  if (eds.isInEmbeddedEditor) {
+    sendToCommentsIframe(['showEditsPreview', ps]);
+    return;
+  }
+
+  // The embedded editor doesn't include any page id when sending the
+  // showEditsPreview message — it doesn't know which page we're looking at.
+  // @ifdef DEBUG
+  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe, 'TyE630KPR5');
+  // @endif
+
+  const store: Store = ReactStore.allData();
+  const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
+
+  // @ifdef DEBUG
+  dieIf(!page, 'TyE3930KRG');
+  // @endif
+
+  if (!page)
+    return;
+
+  let patch: StorePatch;
+
+  if (ps.replyToNr) {
+    // Could debounce this even more:
+    // Show an inline preview, where the reply will appear.
+    const postToReplyTo = page.postsByNr[ps.replyToNr];
+    patch = store_makeNewPostPreviewPatch(
+        store, page, postToReplyTo, ps.safeHtml, ps.anyPostType);
+  }
+
+  if (ps.editingPostNr) {
+    // Replace the real post with a copy that includes the edited html. [EDPVWPST]
+    const postToEdit = page.postsByNr[ps.editingPostNr];
+    if (!origPostBeforeEdits) {
+      origPostBeforeEdits = postToEdit;
+    }
+    patch = store_makeEditsPreviewPatch(store, page, postToEdit, ps.safeHtml);
+  }
+
+  // @ifdef DEBUG
+  dieIf(!patch, 'TyE5WKDAW25');
+  // @endif
+
+  if (patch) {
+    ReactActions.patchTheStore(patch);
+  }
+}
+
+
+export function removeEditsPreview(ps: RemoveEditsPreviewParams) {
+  // @ifdef DEBUG
+  dieIf(!ps.replyToNr && !ps.editingPostNr, 'TyE7WKT206RD');
+  dieIf(ps.replyToNr && ps.editingPostNr, 'TyE4KTJW035M');
+  // @endif
+
+  if (eds.isInEmbeddedEditor) {
+    sendToCommentsIframe(['removeEditsPreview', ps]);
+    return;
+  }
+
+  /*
+  if (!ps.keepDraft && ps.anyDraft) {
+    removeFromSessionStorage(ps.anyDraft.forWhat);
+  } */
+
+  const store: Store = ReactStore.allData();
+  const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
+
+  let patch: StorePatch = {};
+  let highlightPostNrAfter: PostNr;
+
+  if (ps.replyToNr) {
+    const postToReplyTo = page.postsByNr[ps.replyToNr];
+    patch = ps.anyDraft && ps.keepDraft
+        ? store_makeDraftPostPatch(store, page, ps.anyDraft)
+        : store_makeDeletePreviewPatch(
+            store, page, postToReplyTo, ps.anyPostType);
+    highlightPostNrAfter = post_makePreviewIdNr(ps.replyToNr, ps.anyPostType);
+  }
+
+  if (ps.editingPostNr) {
+    if (origPostBeforeEdits) {
+      highlightPostNrAfter = origPostBeforeEdits.nr;
+      patch = {
+        pageVersionsByPageId: {},
+        postsByPageId: {},
+      };
+      patch.postsByPageId[page.pageId] = [origPostBeforeEdits];
+      patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
+      origPostBeforeEdits = null;
+    }
+  }
+
+  patch = { ...patch, setEditorOpen: false };
+  ReactActions.patchTheStore(patch);
+
+  // And then, later:
+  setTimeout(() => {
+    highlightPostNrBrieflyIfThere(highlightPostNrAfter);
+  }, 200);
 }
 
 

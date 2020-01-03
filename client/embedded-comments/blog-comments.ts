@@ -382,12 +382,11 @@ function onMessage(event) {
   // COULD REFACTOR: Actually, child iframes can message each other directly;
   // need not send via the parent.
 
-  var iframe;
+  const iframe = findIframeThatSent(event);
 
   switch (eventName) {
     case 'iframeInited':
       debugLog("got 'iframeInited' message");
-      iframe = findIframeThatSent(event);
 
       if (iframe !== commentsIframe) {
         editorIframeInitedArr = [true];
@@ -448,7 +447,6 @@ function onMessage(event) {
       }
       break;
     case 'setIframeSize':  // COULD rename to sth like setIframeSizeAndMaybeScrollToPost
-      iframe = findIframeThatSent(event);
       setIframeSize(iframe, eventData);
       // The comments iframe wants to know the real win dimensions, so it can position modal
       // dialogs on screen. But wait until the iframe has been resized — because if
@@ -480,7 +478,6 @@ function onMessage(event) {
       break;
       */
     case 'justLoggedIn':
-      iframe = findIframeThatSent(event);
       try {
         const item = {
           pubSiteId: eventData.pubSiteId,
@@ -517,7 +514,6 @@ function onMessage(event) {
       catch (ex) {
         debugLog(`Error removing 'talkyardSession' from  theStorage [TyERMWKSID]`, ex);
       }
-      iframe = findIframeThatSent(event);
       if (iframe === commentsIframe) {
         sendToEditor(event.data);
         showEditor(false);
@@ -552,6 +548,16 @@ function onMessage(event) {
       break;
     case 'handleEditResult':
       sendToComments(event.data);
+      break;
+    case 'showEditsPreview':  // fall through
+    case 'removeEditsPreview':
+      if (iframe === editorIframe) {
+        sendToComments(event.data);
+      }
+      else {
+        debugLog(`Bad msg dir [TyE502KHT4]: ${JSON.stringify(eventData)}`);
+        debugger;
+      }
       break;
   }
 }

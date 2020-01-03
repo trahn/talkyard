@@ -1256,7 +1256,10 @@ const Thread = createComponent({
         0;
       }
       else {
-        const replTo = !isProgrPost && store.usersByIdBrief[parentPost.authorId];
+        const repliesToBlogPost =
+            parentPost.nr === BodyNr && page.pageRole === PageRole.EmbeddedComments;
+        const replTo = !isProgrPost && !repliesToBlogPost &&
+            store.usersByIdBrief[parentPost.authorId];
         const yourReplyTo_or_repliesTo = post.isEditing
             ? (isProgrPost
                 ? t.d.YourProgrNoteC                   // I18N
@@ -1643,7 +1646,7 @@ export const PostHeader = createComponent({
 
     // If we start composing a reply, before having logged in, then, `author` will
     // be missing.
-    const skipName = author.isMissing;  // Maybe show "you" as placeholder name?
+    const skipName = author.isMissing;  // Maybe show "you" as placeholder name? YES, done, remove this line?
     // @ifdef DEBUG
     dieIf(skipName && !post.isPreview && !post.isForDraftNr,
         `Author missing, but not preview: ${JSON.stringify(post)} [TyE306RKD2RF]`);

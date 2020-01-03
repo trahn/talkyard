@@ -230,3 +230,7 @@ Remove Nchan. Use Rust + server-sent-events instead.
 [rich-text-editor]
 Later, support not only CommonMark but also rich text wysiwyg.
 Then first need to fix: [DRAFTPRVW] ?
+
+
+[macro-bug]
+Find a better macro lib that won't "destroy" the file if @endif is on the line just above '}'.
