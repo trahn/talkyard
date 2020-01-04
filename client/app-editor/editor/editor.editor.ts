@@ -265,12 +265,12 @@ export const Editor = createComponent({
           this.saveDraftDebounced();
           // Scroll down so people will see the new line we just appended.
           scrollToBottom(this.refs.rtaTextarea.textareaRef);
-          this.updatePreview(() => {
-            // This happens to early, not sure why. So wait for a while.
+          this.updatePreview({ onDone: () => {
+            // This happens to early — maybe a onebox can take long to load? So wait for a while.
             setTimeout(() => {
               scrollToBottom(this.refs.preview);
             }, 800);
-          });
+          }});
         });
       },
     });
@@ -767,7 +767,7 @@ export const Editor = createComponent({
     return true;
   },
 
-  updatePreview: function(anyCallback?) {
+  updatePreview: function(ps: { scrollToPreview?: true, onDone?: () => void } = {}) {
     // This function is debounce-d, so the editor might have been cleared
     // and closed already, or even unmounted.
     if (this.isGone || !this.state.visible)
@@ -790,6 +790,7 @@ export const Editor = createComponent({
       safePreviewHtml: safeHtml,
     }, () => {
       const params: ShowEditsPreviewParams = {
+        scrollToPreview: ps.scrollToPreview,
         safeHtml,
         editorsPageId: this.state.editorsPageId,
       };
@@ -806,7 +807,7 @@ export const Editor = createComponent({
 
       ReactActions.showEditsPreview(params);
 
-      anyCallback?.();
+      ps.onDone?.();
     });
   },
 
@@ -1211,7 +1212,7 @@ export const Editor = createComponent({
     // Else: the editor covers 100% anyway.
   },
 
-  showEditor: function(opts: { scrollToPreview?: true, scrollToShowPostNr?: PostNr } = {}) {
+  showEditor: function(opts: { scrollToPreview?: true } = {}) {
     this.makeSpaceAtBottomForEditor();
     this.setState({ visible: true });
     if (eds.isInEmbeddedEditor) {
@@ -1227,31 +1228,7 @@ export const Editor = createComponent({
     setTimeout(() => {
       if (this.isGone) return;
       this.focusInputFields();
-      this.updatePreview(() => {
-        if (this.isGone) return;
-        if (opts.scrollToPreview) {  // oops, do in comments iframe  // 112233
-          // The preview won't appear until a bit later, after the preview post
-          // store patch has been applied. But how know when that has happened? [SCROLLPRVW]
-          // For now:
-          setTimeout(() => {
-            if (this.isGone) return;
-            // Break out function? Also see FragActionHashScrollToBottom, tiny bit dupl code.
-            // Scroll to the preview we're currently editing (not to any inactive draft previews).
-            const isEditingBody = this.state.editingPostNr === BodyNr;
-            const selector = isEditingBody ? '.dw-ar-t > .s_T_YourPrvw' : '.s_T-Prvw-IsEd';
-            const marginTop = isEditingBody ? 110 : 50;
-            utils.scrollIntoViewInPageColumn(selector, {
-              marginTop, marginBottom: 30,
-            });
-          }, 10);
-        }
-      });
-      // COULD DELETE this, and always show a preview?, use above scrollToPreview,  // 112233
-      // also when editing an existing post?
-      // However, there's a race: [SCROLLPRVW] so maybe keep this for a while?
-      if (opts.scrollToShowPostNr) {
-        this.scrollPostIntoView(opts.scrollToShowPostNr);
-      }
+      this.updatePreview({ scrollToPreview: true });
     }, 1);
   },
 
@@ -1265,11 +1242,11 @@ export const Editor = createComponent({
 
     if (!ps.keepDraft) {
       if (anyDraft) {
-        removeFromSessionStorage(anyDraft.forWhat);  // move to comments win
+        removeFromSessionStorage(anyDraft.forWhat);
       }
     }
 
-    const params: RemoveEditsPreviewParams = {
+    const params: HideEditsorAndPreviewParams = {
       anyDraft,
       keepDraft: ps.keepDraft,
       editorsPageId: this.state.editorsPageId,
@@ -1285,7 +1262,7 @@ export const Editor = createComponent({
       params.editingPostNr = this.state.editingPostNr;
     }
 
-    ReactActions.removeEditsPreview(params);  // Merge this (112233), ...
+    ReactActions.hideEditorAndPreview(params);
 
     this.returnSpaceAtBottomForEditor();
     this.setState({
@@ -1312,17 +1289,6 @@ export const Editor = createComponent({
       guidelines: null,
       backdropOpacity: 0,
     });
-
-    // Remove any is-replying highlights.    // and this (112233), ...
-    if (eds.isInEmbeddedEditor) {
-      window.parent.postMessage(JSON.stringify(['hideEditor', {}]), eds.embeddingOrigin);
-    }
-    else {
-      // (Old jQuery based code.)
-      $h.removeClasses($all('.dw-replying'), 'dw-replying');  // GAAAAH
-    }
-
-    ReactActions.patchTheStore({ setEditorOpen: false });   // and this (112233) into one?
   },
 
   callOnDoneCallback: function(saved: boolean) {

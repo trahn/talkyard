@@ -42,7 +42,7 @@ export function store_thisIsMyPage(store: Store): boolean {
 
 export function store_getAuthorOrMissing(store: Store, post: Post): BriefUser {
   // If we're composing a new reply, without having logged in, then, there's not yet
-  // any author id, when rendering the reply preview.
+  // any author id, when rendering the reply preview. [305KGWGH2]
   if (!post.authorId) {
     // @ifdef DEBUG
     dieIf(!post.isPreview, 'TyE047KDJF2');

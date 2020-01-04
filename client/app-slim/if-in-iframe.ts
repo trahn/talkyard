@@ -125,8 +125,11 @@ function onMessage(event) {
     case 'showEditsPreview':
       ReactActions.showEditsPreview(eventData);
       break;
-    case 'removeEditsPreview':
-      ReactActions.removeEditsPreview(eventData);
+    case 'scrollToPreview':
+      ReactActions.scrollToPreview(eventData);
+      break;
+    case 'hideEditorAndPreview':
+      ReactActions.hideEditorAndPreview(eventData);
       break;
     case 'iframeOffsetWinSize':
       debiki2.iframeOffsetWinSize = eventData;

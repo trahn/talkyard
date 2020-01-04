@@ -1520,6 +1520,11 @@ const ReplyReceivers = createComponent({
         // button in the chat section, and then replies to someone too.
         continue;
       }
+      if (repliedToNr === BodyNr && eds.isInEmbeddedCommentsIframe) {
+        // We're replying to the blog article. There's a dummy orig post by the
+        // System user — don't show "in reply to System":
+        continue;
+      }
       const post = page.postsByNr[repliedToNr];
       if (!post) {
         receivers.push(r.i({ key: repliedToNr }, 'Unknown [DwE4KFYW2]'));

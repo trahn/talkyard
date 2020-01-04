@@ -525,9 +525,6 @@ function onMessage(event) {
     case 'showEditor':
       showEditor(true);
       break;
-    case 'hideEditor':
-      showEditor(false);
-      break;
     case 'maximizeEditor':
       setEditorMaximized(eventData);
       break;
@@ -549,8 +546,11 @@ function onMessage(event) {
     case 'handleEditResult':
       sendToComments(event.data);
       break;
-    case 'showEditsPreview':  // fall through
-    case 'removeEditsPreview':
+    case 'showEditsPreview':
+      let show = true;
+      // fall through
+    case 'hideEditorAndPreview':
+      showEditor(show);
       if (iframe === editorIframe) {
         sendToComments(event.data);
       }

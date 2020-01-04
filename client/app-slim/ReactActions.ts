@@ -779,7 +779,8 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   // @endif
 
   if (eds.isInEmbeddedEditor) {
-    sendToCommentsIframe(['showEditsPreview', ps]);
+    const editorIframeHeightPx = window.innerHeight;
+    sendToCommentsIframe(['showEditsPreview', { ...ps, editorIframeHeightPx }]);
     return;
   }
 
@@ -823,26 +824,57 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   // @endif
 
   if (patch) {
-    ReactActions.patchTheStore(patch);
+    ReactActions.patchTheStore(patch, () => {
+      if (ps.scrollToPreview) {
+        scrollToPreview({
+          isEditingBody: ps.editingPostNr === BodyNr,
+          editorIframeHeightPx: ps.editorIframeHeightPx,
+        });
+      }
+    });
   }
 }
 
 
-export function removeEditsPreview(ps: RemoveEditsPreviewParams) {
+export function scrollToPreview(
+      ps: { isEditingBody?: boolean, editorIframeHeightPx?: number } = {}) {
+
+  if (eds.isInEmbeddedEditor) {
+    const editorIframeHeightPx = window.innerHeight;
+    sendToCommentsIframe(['scrollToPreview', { ...ps, editorIframeHeightPx }]);
+    return;
+  }
+
+  // The preview won't appear until a bit later, after the preview post
+  // store patch has been applied. But how know when that has happened? [SCROLLPRVW]
+
+  // Break out function? Also see FragActionHashScrollToBottom, tiny bit dupl code.
+  // Scroll to the preview we're currently editing (not to any inactive draft previews).
+  const selector = ps.isEditingBody ? '.dw-ar-t > .s_T_YourPrvw' : '.s_T-Prvw-IsEd';
+  const marginTop = ps.isEditingBody ? 110 : 50;
+  utils.scrollIntoViewInPageColumn(selector, {
+    marginTop,
+    // If we're in an embedded comments iframe, then, there's another iframe for the
+    // editor. Then scroll a bit more, so that other iframe won't occlude the preview.
+    marginBottom: 30 + (ps.editorIframeHeightPx || 0),
+  });
+}
+
+
+export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
   // @ifdef DEBUG
   dieIf(!ps.replyToNr && !ps.editingPostNr, 'TyE7WKT206RD');
   dieIf(ps.replyToNr && ps.editingPostNr, 'TyE4KTJW035M');
   // @endif
 
   if (eds.isInEmbeddedEditor) {
-    sendToCommentsIframe(['removeEditsPreview', ps]);
+    sendToCommentsIframe(['hideEditorAndPreview', ps]);
+    ReactActions.patchTheStore({ setEditorOpen: false });
     return;
   }
 
-  /*
-  if (!ps.keepDraft && ps.anyDraft) {
-    removeFromSessionStorage(ps.anyDraft.forWhat);
-  } */
+  // (Old jQuery based code.)
+  $h.removeClasses($all('.dw-replying'), 'dw-replying');  // GAAAAH
 
   const store: Store = ReactStore.allData();
   const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
@@ -882,10 +914,11 @@ export function removeEditsPreview(ps: RemoveEditsPreviewParams) {
 }
 
 
-export function patchTheStore(storePatch: StorePatch) {
+export function patchTheStore(storePatch: StorePatch, onDone?: () => void) {
   ReactDispatcher.handleViewAction({
     actionType: actionTypes.PatchTheStore,
-    storePatch: storePatch,
+    storePatch,
+    onDone
   });
 }
 

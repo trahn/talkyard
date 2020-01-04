@@ -198,7 +198,12 @@ interface Draft {
 }
 
 
-interface ShowEditsPreviewParams {
+interface EditorIframeHeight {
+  editorIframeHeightPx?: number;
+}
+
+interface ShowEditsPreviewParams extends EditorIframeHeight {
+  scrollToPreview?: true;
   safeHtml: string;
   editorsPageId?: PageId;
   anyPostType?: PostType;
@@ -207,7 +212,7 @@ interface ShowEditsPreviewParams {
 }
 
 
-interface RemoveEditsPreviewParams {
+interface HideEditsorAndPreviewParams {
   anyDraft?: Draft,
   keepDraft: boolean,
   editorsPageId?: PageId;

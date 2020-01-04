@@ -409,10 +409,6 @@ ReactDispatcher.register(function(payload) {
       return true;
   }
 
-  // How can one know when all these changes have been applied?
-  // (Would need to look at emitChange() and the hook fns.)
-  // Some code wants to run afterwards: [SCROLLPRVW]
-
   if (store.cannotQuickUpdate) {
     resetQuickUpdateInPlace(store);
   }
@@ -432,6 +428,13 @@ ReactDispatcher.register(function(payload) {
   });
 
   resetQuickUpdateInPlace(store);
+
+  // How can one know when React is done with all updates scheduled above?
+  // (Would need to look into how emitChange() and the hook fns work?)
+  // Some code wants to run afterwards: [SCROLLPRVW]. For now though:
+  if (action.onDone) {
+    setTimeout(action.onDone, 1);
+  }
 
   // Tell the dispatcher that there were no errors:
   return true;

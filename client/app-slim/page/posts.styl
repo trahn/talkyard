@@ -67,7 +67,7 @@
 // Draft and preview posts
 //===========================
 
-$previewBackground = hsl($uiHueHighlightedBackground, 87%, 80%);
+$previewBackground = hsl($uiHueHighlightedBackground, 93%, 80%);
 $previewBorderBottom = 15px solid $previewBackground !important;
 
 .s_T_YourPrvw
@@ -553,9 +553,15 @@ html:not(.mouse) .dw-rr
 .esP_By_F-G
   font-weight: normal;
   color: hsl(0, 0%, 11%);
+  // Append a "?" to show that the user might be anyone, e.g. email not verified.
+  // But ... (435465490)
   &::after
-    // Supposed to show that the user might be anyone, e.g. email not verified.
     content: ' ?';
+
+// ... (435465490) But not for the Unknown user — currently, that'd be oneself,
+// when composing a new post without having logged in [305KGWGH2].
+.s_P_By-Unk .esP_By_F-G::after
+  content: none;
 
 .esP_By_U
   font-weight: normal;
@@ -576,7 +582,7 @@ html:not(.mouse) .dw-rr
 .esP_viewHist
   white-space: nowrap;
 
-.esP_By,
+.esP_By:not(.s_P_By-Unk),  // not clickable, if is the Unknown user
 .esP_viewHist,
 .dw-a-clps:hover
   cursor: pointer;
