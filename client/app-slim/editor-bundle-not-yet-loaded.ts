@@ -37,7 +37,7 @@ export function toggleWriteReplyToPostNr(postNr: PostNr, inclInReply: boolean, a
 }
 
 
-export function openEditorToEditPostNr(postId: number, onDone?) {
+export function openEditorToEditPostNr(postId: number, onDone?: EditsDoneHandler) {
   ensureEditorCreated(editor => {
     editor.editPost(postId, onDone);
   });
@@ -58,7 +58,8 @@ export function openToEditChatTitleAndPurpose() {
 }
 
 
-export function openToWriteChatMessage(text: string, draft: Draft | undefined, draftStatus, onDone) {
+export function openToWriteChatMessage(text: string, draft: Draft | undefined,
+      draftStatus, onDone: EditsDoneHandler) {
   ensureEditorCreated(editor => {
     editor.openToWriteChatMessage(text || '', draft, draftStatus, onDone);
   });

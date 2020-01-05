@@ -100,9 +100,14 @@ export const Editor = createComponent({
   },
 
   componentWillMount: function() {
-    this.updatePreview = _.debounce(this.updatePreview, 333);
-    this.saveDraftDebounced = _.debounce(this.saveDraftNow, 2022);  // [7AKBJ42]
-    this.searchForSimilarTopicsDebounced = _.debounce(this.searchForSimilarTopics, 1800);
+    this.updatePreviewSoon = _.debounce(this.updatePreviewNow, 333);
+
+    this.saveDraftSoon = _.debounce(() => {
+      if (this.isGone || !this.state.visible) return;
+      this.saveDraftNow();  // [7AKBJ42]
+    }, 2022);
+
+    this.searchForSimilarTopicsSoon = _.debounce(this.searchForSimilarTopicsNow, 1800);
   },
 
   componentDidMount: function() {
@@ -262,10 +267,10 @@ export const Editor = createComponent({
             linkHtml,
           draftStatus: DraftStatus.ShouldSave,
         }, () => {
-          this.saveDraftDebounced();
+          this.saveDraftSoon();
           // Scroll down so people will see the new line we just appended.
           scrollToBottom(this.refs.rtaTextarea.textareaRef);
-          this.updatePreview({ onDone: () => {
+          this.updatePreviewSoon({ onDone: () => {
             // This happens to early — maybe a onebox can take long to load? So wait for a while.
             setTimeout(() => {
               scrollToBottom(this.refs.preview);
@@ -426,7 +431,7 @@ export const Editor = createComponent({
     this.loadDraftAndGuidelines(draftLocator, writingWhat);
   },
 
-  editPost: function(postNr: PostNr, onDone?) {
+  editPost: function(postNr: PostNr, onDone?: EditsDoneHandler) {
     // [editor-drafts] UX COULD somehow give the user the option to cancel & close, without
     // loading? saving? any draft.
 
@@ -459,7 +464,7 @@ export const Editor = createComponent({
         draft,
       }, () => {
         this.focusInputFields();
-        this.updatePreview();
+        this.updatePreviewSoon();
       });
     });
   },
@@ -485,7 +490,7 @@ export const Editor = createComponent({
       showSimilarTopics: true,
       searchResults: null,
     },
-      this.updatePreview);
+      this.updatePreviewSoon);
 
     const draftLocator: DraftLocator = {
       draftType: DraftType.Topic,
@@ -500,7 +505,8 @@ export const Editor = createComponent({
     this.editPost(BodyNr);
   },
 
-  openToWriteChatMessage: function(text: string, draft: Draft | undefined, draftStatus, onDone?) {
+  openToWriteChatMessage: function(text: string, draft: Draft | undefined, draftStatus,
+        onDone?: EditsDoneHandler) {
     if (this.alertBadState())
       return;
     const store: Store = this.state.store;
@@ -650,6 +656,8 @@ export const Editor = createComponent({
 
     Server.loadDraftAndGuidelines(draftLocator, writingWhat, theCategoryId, thePageRole,
         (guidelinesSafeHtml, draft?: Draft) => {
+      if (this.isGone || !this.state.visible)
+        return;
       let guidelines = undefined;
       if (guidelinesSafeHtml) {
         const guidelinesHash = hashStringToNumber(guidelinesSafeHtml);
@@ -740,12 +748,12 @@ export const Editor = createComponent({
 
     this.setState({ title, text, draftStatus }, () => {
       if (draftStatus === DraftStatus.ShouldSave) {
-        this.saveDraftDebounced();
+        this.saveDraftSoon();
       }
       if (titleChanged) {
-        this.searchForSimilarTopicsDebounced();
+        this.searchForSimilarTopicsSoon();
       }
-      this.updatePreview();
+      this.updatePreviewSoon();
     });
   },
 
@@ -767,7 +775,7 @@ export const Editor = createComponent({
     return true;
   },
 
-  updatePreview: function(ps: { scrollToPreview?: true, onDone?: () => void } = {}) {
+  updatePreviewNow: function(ps: { scrollToPreview?: true, onDone?: () => void } = {}) {
     // This function is debounce-d, so the editor might have been cleared
     // and closed already, or even unmounted.
     if (this.isGone || !this.state.visible)
@@ -811,7 +819,7 @@ export const Editor = createComponent({
     });
   },
 
-  searchForSimilarTopics: function() {
+  searchForSimilarTopicsNow: function() {
     if (!this.refs.editor)
       return;
 
@@ -1002,18 +1010,19 @@ export const Editor = createComponent({
         });
         this.isSavingDraft = true;
         Server.deleteDrafts([oldDraft.draftNr], useBeacon || (() => {
-          // Patch the store: delete the draft & draft post.
+          // Could patch the store: delete the draft — so won't reappear
+          // if [offline-first] and navigates back to this page.
 
           this.isSavingDraft = false;
           console.debug("...Deleted draft.");
+
+          if (this.isGone || !this.state.visible)
+            return;
+
           this.setState({
             draft: null,
             draftStatus: DraftStatus.Deleted,
           });
-          if (callbackThatClosesEditor) {
-            callbackThatClosesEditor();  // not needed? see just below
-               // hmm bbut saveDraftClearAndClose will try to save the draft?
-          }
         }), useBeacon || this.setCannotSaveDraft);
       }
       if (callbackThatClosesEditor) {
@@ -1038,6 +1047,10 @@ export const Editor = createComponent({
 
     if (saveInSessionStorage) {
       putInSessionStorage(draftToSave.forWhat, draftToSave);
+      this.setState({
+         draft: draftToSave,
+         draftStatus: DraftStatus.SavedInBrowser,
+      });
       if (callbackThatClosesEditor) {
         callbackThatClosesEditor(draftToSave);
       }
@@ -1052,10 +1065,15 @@ export const Editor = createComponent({
     Server.upsertDraft(draftToSave, useBeacon || ((draftWithNr: Draft) => {
       this.isSavingDraft = false;
       console.debug("...Saved draft.");
+
+      if (this.isGone || !this.state.visible)
+        return;
+
       this.setState({
         draft: draftWithNr,
         draftStatus: DraftStatus.Saved,
       });
+
       if (callbackThatClosesEditor) {
         callbackThatClosesEditor(draftWithNr);
       }
@@ -1099,7 +1117,7 @@ export const Editor = createComponent({
         this.postChatMessage();
       }
       else {
-        // Probably replying to someone.
+        // Replying to someone.
         this.saveNewPost();
       }
     });
@@ -1117,7 +1135,7 @@ export const Editor = createComponent({
   saveNewPost: function() {
     this.throwIfBadTitleOrText(null, t.e.PleaseWriteSth);
     Server.saveReply(this.state.replyToPostNrs, this.state.text,
-          this.state.anyPostType, this.anyDraftNr(), () => {
+          this.state.anyPostType, this.state.draft, () => {
       this.callOnDoneCallback(true);
       this.clearAndClose();
     });
@@ -1140,7 +1158,7 @@ export const Editor = createComponent({
   },
 
   postChatMessage: function() {
-    Server.insertChatMessage(this.state.text, this.anyDraftNr(), () => {
+    Server.insertChatMessage(this.state.text, this.state.draft, () => {
       this.callOnDoneCallback(true);
       this.clearAndClose();
     });
@@ -1228,7 +1246,7 @@ export const Editor = createComponent({
     setTimeout(() => {
       if (this.isGone) return;
       this.focusInputFields();
-      this.updatePreview({ scrollToPreview: true });
+      this.updatePreviewSoon({ scrollToPreview: true });
     }, 1);
   },
 
@@ -1240,10 +1258,8 @@ export const Editor = createComponent({
   clearAndClose: function(ps: { keepDraft?: true, upToDateDraft?: Draft } = {}) {
     const anyDraft: Draft = ps.upToDateDraft || this.state.draft;
 
-    if (!ps.keepDraft) {
-      if (anyDraft) {
-        removeFromSessionStorage(anyDraft.forWhat);
-      }
+    if (!ps.keepDraft && anyDraft) {
+      removeFromSessionStorage(anyDraft.forWhat);
     }
 
     const params: HideEditsorAndPreviewParams = {
@@ -1292,8 +1308,9 @@ export const Editor = createComponent({
   },
 
   callOnDoneCallback: function(saved: boolean) {
-    if (this.state.onDone) {
-      this.state.onDone(
+    const onDone: EditsDoneHandler = this.state.onDone;
+    if (onDone) {
+      onDone(
           saved, this.state.text,
           // If the text in the editor was saved (i.e. submitted, not draft-saved), we don't
           // need the draft any longer.
@@ -1309,27 +1326,27 @@ export const Editor = createComponent({
 
   makeTextBold: function() {
     const newText = wrapSelectedText(this.refs.rtaTextarea.textareaRef, t.e.exBold, '**');
-    this.setState({ text: newText }, this.updatePreview);
+    this.setState({ text: newText }, this.updatePreviewSoon);
   },
 
   makeTextItalic: function() {
     const newText = wrapSelectedText(this.refs.rtaTextarea.textareaRef, t.e.exEmph, '*');
-    this.setState({ text: newText }, this.updatePreview);
+    this.setState({ text: newText }, this.updatePreviewSoon);
   },
 
   markupAsCode: function() {
     const newText = wrapSelectedText(this.refs.rtaTextarea.textareaRef, t.e.exPre, '`');
-    this.setState({ text: newText }, this.updatePreview);
+    this.setState({ text: newText }, this.updatePreviewSoon);
   },
 
   quoteText: function() {
     const newText = wrapSelectedText(this.refs.rtaTextarea.textareaRef, t.e.exQuoted, '> ', null, '\n\n');
-    this.setState({ text: newText }, this.updatePreview);
+    this.setState({ text: newText }, this.updatePreviewSoon);
   },
 
   addHeading: function() {
     const newText = wrapSelectedText(this.refs.rtaTextarea.textareaRef, t.e.ExHeading, '### ', null, '\n\n');
-    this.setState({ text: newText }, this.updatePreview);
+    this.setState({ text: newText }, this.updatePreviewSoon);
   },
 
   render: function() {
@@ -1736,25 +1753,6 @@ function page_isUsabilityTesting(pageType: PageRole): boolean {  // [plugin]
 }
 
 
-const SelectCategoryInput = createClassAndFactory({
-  displayName: 'SelectCategoryInput',
-
-  render: function () {
-    const categoryOptions = this.props.categories.map((category: Category) => {
-      return r.option({ value: category.id, key: category.id }, category.name);
-    });
-
-    return (
-      Input({
-          type: 'select', label: this.props.label, title: this.props.title,
-          labelClassName: this.props.labelClassName,
-          wrapperClassName: this.props.wrapperClassName,
-          value: this.props.categoryId, onChange: this.props.onChange },
-        categoryOptions));
-  }
-});
-
-
 function wrapSelectedText(textarea, content: string, wrap: string, wrapAfter?: string,
       newlines?: string) {
   const startIndex = textarea.selectionStart;
@@ -1844,6 +1842,7 @@ export function DraftStatusInfo(props: { draftStatus: DraftStatus, draftNr: numb
     case DraftStatus.NotLoaded: draftStatusText = t.e.LoadingDraftDots; break;
     case DraftStatus.NothingHappened: break;
     case DraftStatus.EditsUndone: draftStatusText = t.e.DraftUnchanged; break;
+    case DraftStatus.SavedInBrowser: draftStatusText = "Draft saved, in browser session."; break;  // I18N
     case DraftStatus.Saved: draftStatusText = t.e.DraftSaved(draftNr); break;
     case DraftStatus.Deleted: draftStatusText = t.e.DraftDeleted(draftNr); break;
     case DraftStatus.ShouldSave: draftStatusText = t.e.WillSaveDraft(draftNr); break;

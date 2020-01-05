@@ -30,7 +30,7 @@ d.i.clearIsReplyingMarks = function() {
 
 
 // Try to remove. Rename to handlePagePatch?
-d.i.handleReplyResult = function(data) {
+d.i.handleReplyResult = function(data, draftToDelete /* Draft | undefined */) {
   if (eds.isInEmbeddedEditor) {
     if (data.newlyCreatedPageId) {
       // Update this, so subsequent server requests, will use the correct page id. [4HKW28]
@@ -39,22 +39,22 @@ d.i.handleReplyResult = function(data) {
     // Send a message to the embedding page, which will forward it to
     // the comments iframe, which will show the new comment.
     window.parent.postMessage(
-        JSON.stringify(['handleReplyResult', data]), eds.embeddingOrigin);
+        JSON.stringify(['handleReplyResult', [data, draftToDelete]]), eds.embeddingOrigin);
   }
   else {
-    doHandleReplyResult(data);
+    doHandleReplyResult(data, draftToDelete);
   }
 };
 
 
-function doHandleReplyResult(data) {
+function doHandleReplyResult(data, draftToDelete /* Draft | undefined */) {
   if (_.isNumber(data.nr || data.postId)) {  // a Post with a .nr?
     // It's a post. Try to remove this.
     debiki2.ReactActions.updatePost(data);
   }
   else {
     // It's a StorePatch.
-    debiki2.ReactActions.patchTheStore(data);
+    debiki2.ReactActions.patchTheStore({ ...data, deleteDraft: draftToDelete });
   }
 }
 

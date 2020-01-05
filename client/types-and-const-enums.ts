@@ -70,7 +70,8 @@ const enum DraftStatus {  // sync with test code [5ABXG20]
   NotLoaded = 0,
   NothingHappened = 1,
   EditsUndone = 2,
-  Saved = 3,
+  Saved = 3,   // RENAME to SavedInServer
+  SavedInBrowser = 31,
   Deleted = 4,
   NeedNotSave = Deleted,
   ShouldSave = 5,

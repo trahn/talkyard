@@ -1305,6 +1305,22 @@ function patchTheStore(storePatch: StorePatch) {
     store.postsToUpdate[p.postId] = true;
   }
 
+  if (storePatch.deleteDraft) {
+    _.each(store.me.myDataByPageId, (myData: MyPageData) => {
+      myData.myDrafts = _.filter(myData.myDrafts, (draft: Draft) => {
+        // Sometimes, the draftNr is 0 (or maybe in the future, different random negative
+        // numbers), although it's the same draft — namely when one hasn't logged in
+        // yet and the server couldn't yet give the draft a draft nr.
+        // Maybe in other cases, the locators are slightly different somehow,
+        // although it's the same draft — e.g. if an embedding page's url got changed?
+        // So compare by nr too.
+        const sameLocator = _.isEqual(draft.forWhat, storePatch.deleteDraft.forWhat);
+        const sameNr = !!draft.draftNr && draft.draftNr === storePatch.deleteDraft.draftNr;
+        return !sameLocator && !sameNr;
+      });
+    });
+  }
+
   if (storePatch.publicCategories) {
     dieIf(!storePatch.restrictedCategories, 'TyEK2WP49');
     // [redux] modifying the store in place, again.
@@ -1690,7 +1706,7 @@ function addLocalStorageDataTo(me: Myself) {
 
   // Any drafts in session storage? Wrap in try-catch in case browser privacy
   // settings forbids using sessionStorage.
-  try {
+  if (!eds.isInEmbeddedEditor) try {
     // TESTS_MISSING
     Object.keys(sessionStorage).forEach(keyStr => {
       if (keyStr.indexOf('embeddingUrl') >= 0) {

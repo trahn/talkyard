@@ -106,7 +106,7 @@ function onMessage(event) {
       // <iframe> when the editor has posted a new reply and the server has replied
       // with the HTML for the reply. `eventData` is JSON that includes this HTML;
       // it'll be inserted into the comments <iframe>.
-      d.i.handleReplyResult(eventData);
+      d.i.handleReplyResult(eventData[0], eventData[1]);
       break;
     case 'clearIsReplyingMarks':
       ReactActions.patchTheStore({ setEditorOpen: false });

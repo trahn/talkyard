@@ -222,6 +222,10 @@ interface HideEditsorAndPreviewParams {
 }
 
 
+type EditsDoneHandler = (
+    wasSaved: boolean, text: string, draft: Draft | null, draftStatus: DraftStatus) => void;
+
+
 interface Post {
   // Client side only ------
   // If this post / these changes don't yet exist — it's a preview.
@@ -1312,6 +1316,7 @@ interface StorePatch {
 
   setEditorOpen?: boolean;
   updateEditPreview?: EditPreview;
+  deleteDraft?: Draft;
 
   // If doing something resulted in a new page being created, and we should continue on that page.
   // E.g. if posting the first reply, in an embedded comments discussion (then a page for the

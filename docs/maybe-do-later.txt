@@ -12,6 +12,9 @@ Implement sub categories.
 [sw] [sse]
 Service worker. Server sent events.
 
+[offline-first]
+Things to think about, if making Ty work offline.
+
 [spam]
 When deleting a post, ask if it's because it's spam. If yes, and the post
 hasn't been spam checked — send it to the spam check services so they'll
@@ -46,7 +49,7 @@ Change layout of problem type topics to traditional forum flat comments layout.
 & use for formal messages too, or maybe repl w chat?
 
 [editor-drafts]:
-When editing a post, ask "Continue editing draft? [Yes, resume draft] [No, ignore draft (but keep it)]"
+When starting a new topic, or editing a post, ask "Continue editing draft? [Yes, resume draft] [No, ignore draft (but keep it)]"
 instead of always opening the old draft. Because otherwise sometimes old edits I didn't want, reappears.
 How do that, UX wise? Maybe ask, when *opening* instead of when *saving*? and always
 save a draft by default? Because maybe short of time when saving (e.g. need to run and

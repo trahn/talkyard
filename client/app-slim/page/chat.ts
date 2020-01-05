@@ -510,8 +510,7 @@ const ChatMessageEditor = createComponent({
 
   saveChatMessage: function() {
     this.setState({ isSaving: true });
-    const draft: Draft | undefined = this.state.draft;
-    Server.insertChatMessage(this.state.text, draft ? draft.draftNr : NoDraftNr, () => {
+    Server.insertChatMessage(this.state.text, this.state.draft, () => {
       if (this.isGone) return;
       this.setState({
         text: '',
