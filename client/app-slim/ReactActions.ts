@@ -774,7 +774,7 @@ let origPostBeforeEdits: Post | undefined;
 
 export function showEditsPreview(ps: ShowEditsPreviewParams) {
   // @ifdef DEBUG
-  dieIf(!ps.replyToNr && !ps.editingPostNr, 'TyE5WKDAW25');
+  dieIf(!ps.replyToNr && !ps.editingPostNr, 'TyE306RKVHR2');
   dieIf(ps.replyToNr && ps.editingPostNr, 'TyE73KGTD02');
   // @endif
 

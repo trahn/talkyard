@@ -797,23 +797,23 @@ export const Editor = createComponent({
       // here: [DRAFTPRVW].
       safePreviewHtml: safeHtml,
     }, () => {
-      const params: ShowEditsPreviewParams = {
-        scrollToPreview: ps.scrollToPreview,
-        safeHtml,
-        editorsPageId: this.state.editorsPageId,
-      };
-
-      const postNrs: PostNr[] = this.state.replyToPostNrs;
-      if (postNrs.length === 1) {
-        params.replyToNr = postNrs[0];
-        params.anyPostType = this.state.anyPostType;
+      // Show an in-page preview, unless we're creating a new page.
+      if (!this.state.newPageRole) {
+        const params: ShowEditsPreviewParams = {
+          scrollToPreview: ps.scrollToPreview,
+          safeHtml,
+          editorsPageId: this.state.editorsPageId,
+        };
+        const postNrs: PostNr[] = this.state.replyToPostNrs;
+        if (postNrs.length === 1) {
+          params.replyToNr = postNrs[0];
+          params.anyPostType = this.state.anyPostType;
+        }
+        if (this.state.editingPostUid) {
+          params.editingPostNr = this.state.editingPostNr;
+        }
+        ReactActions.showEditsPreview(params);
       }
-
-      if (this.state.editingPostUid) {
-        params.editingPostNr = this.state.editingPostNr;
-      }
-
-      ReactActions.showEditsPreview(params);
 
       ps.onDone?.();
     });
@@ -1281,6 +1281,10 @@ export const Editor = createComponent({
     ReactActions.hideEditorAndPreview(params);
 
     this.returnSpaceAtBottomForEditor();
+
+    if (this.isGone)
+      return;
+
     this.setState({
       visible: false,
       replyToPostNrs: [],
