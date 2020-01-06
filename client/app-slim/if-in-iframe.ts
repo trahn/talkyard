@@ -108,11 +108,6 @@ function onMessage(event) {
       // it'll be inserted into the comments <iframe>.
       d.i.handleReplyResult(eventData[0], eventData[1]);
       break;
-    case 'clearIsReplyingMarks':
-      ReactActions.patchTheStore({ setEditorOpen: false });
-      // This is sent from the embedded editor to an embedded comments page.
-      d.i.clearIsReplyingMarks();
-      break;
     case 'editorEditPost':
       // Sent from an embedded comments page to the embedded editor.
       var postNr = eventData;
@@ -129,6 +124,7 @@ function onMessage(event) {
       ReactActions.scrollToPreview(eventData);
       break;
     case 'hideEditorAndPreview':
+      // This is sent from the embedded editor to an embedded comments page.
       ReactActions.hideEditorAndPreview(eventData);
       break;
     case 'iframeOffsetWinSize':

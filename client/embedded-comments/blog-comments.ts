@@ -384,6 +384,16 @@ function onMessage(event) {
 
   const iframe = findIframeThatSent(event);
 
+  let assertIsFromEditorToComments = function() {};
+  // @ifdef DEBUG
+  assertIsFromEditorToComments = function() {
+    if (iframe !== editorIframe) {
+      debugLog(`Bad msg dir [TyEMSGDIR]: '${eventName}', ${JSON.stringify(eventData)}`);
+      debugger;
+    }
+  };
+  // @endif
+
   switch (eventName) {
     case 'iframeInited':
       debugLog("got 'iframeInited' message");
@@ -523,7 +533,17 @@ function onMessage(event) {
       }
       break;
     case 'showEditor':
+      assertIsFromEditorToComments();
       showEditor(true);
+      break;
+    case 'showEditsPreview':
+      assertIsFromEditorToComments();
+      sendToComments(event.data);
+      break;
+    case 'hideEditorAndPreview':
+      assertIsFromEditorToComments();
+      showEditor(false);
+      sendToComments(event.data);
       break;
     case 'maximizeEditor':
       setEditorMaximized(eventData);
@@ -537,27 +557,11 @@ function onMessage(event) {
     case 'handleReplyResult':
       sendToComments(event.data);
       break;
-    case 'clearIsReplyingMarks':
-      sendToComments(event.data);
-      break;
     case 'editorEditPost':
       sendToEditor(event.data);
       break;
     case 'handleEditResult':
       sendToComments(event.data);
-      break;
-    case 'showEditsPreview':
-      let show = true;
-      // fall through
-    case 'hideEditorAndPreview':
-      showEditor(show);
-      if (iframe === editorIframe) {
-        sendToComments(event.data);
-      }
-      else {
-        debugLog(`Bad msg dir [TyE502KHT4]: ${JSON.stringify(eventData)}`);
-        debugger;
-      }
       break;
   }
 }
@@ -695,7 +699,6 @@ function showEditor(show) {
   else {
     editorWrapper.style.display = 'none';
     editorPlaceholder.style.display = 'none';
-    sendToComments('["clearIsReplyingMarks", {}]');
   }
 }
 

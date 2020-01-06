@@ -122,10 +122,15 @@ export function logoutClientSideOnly() {
   ReactDispatcher.handleViewAction({
     actionType: actionTypes.Logout
   });
+
   if (eds.isInEmbeddedCommentsIframe) {
     // Tell the editor iframe that we've logged out.
     sendToEditorIframe(['logoutClientSideOnly', null]);
+
+    // Probaby not needed, since reload() below, but anyway:
+    ReactActions.patchTheStore({ setEditorOpen: false });
   }
+
   // Abort any long polling request, so we won't receive data, for this user, after we've
   // logged out: (not really needed, because we reload() below)
   Server.abortAnyLongPollingRequest();
@@ -769,12 +774,25 @@ export function resumeDraft(post: Post) {
 }
 
 
+export function onEditorOpen(onDone: () => void) {
+  // @ifdef DEBUG
+  // Use messages 'editorToggleReply' or 'editorEditPost' instead.
+  dieIf(eds.isInEmbeddedCommentsIframe, 'Ty305WKHE3');
+  // @endif
+
+  if (eds.isInEmbeddedEditor) {
+    sendToCommentsIframe(['showEditor', {}]);
+  }
+
+  ReactActions.patchTheStore({ setEditorOpen: true }, onDone);
+}
+
+
 let origPostBeforeEdits: Post | undefined;
 
 
 export function showEditsPreview(ps: ShowEditsPreviewParams) {
   // @ifdef DEBUG
-  dieIf(!ps.replyToNr && !ps.editingPostNr, 'TyE306RKVHR2');
   dieIf(ps.replyToNr && ps.editingPostNr, 'TyE73KGTD02');
   // @endif
 
@@ -820,7 +838,9 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   }
 
   // @ifdef DEBUG
-  dieIf(!patch, 'TyE5WKDAW25');
+  dieIf(!patch &&
+      // Chat message previews not yet implemented. [CHATPRVW]
+      !page_isChatChannel(page.pageRole), 'TyE5WKDAW25');
   // @endif
 
   if (patch) {
@@ -863,7 +883,6 @@ export function scrollToPreview(
 
 export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
   // @ifdef DEBUG
-  dieIf(!ps.replyToNr && !ps.editingPostNr, 'TyE7WKT206RD');
   dieIf(ps.replyToNr && ps.editingPostNr, 'TyE4KTJW035M');
   // @endif
 
@@ -872,9 +891,6 @@ export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
     ReactActions.patchTheStore({ setEditorOpen: false });
     return;
   }
-
-  // (Old jQuery based code.)
-  $h.removeClasses($all('.dw-replying'), 'dw-replying');  // GAAAAH
 
   const store: Store = ReactStore.allData();
   const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;

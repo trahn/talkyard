@@ -187,9 +187,8 @@ export const PostActions = createComponent({
 
     login.loginIfNeededReturnToPost(loginToWhat, post.nr, () => {
       if (this.isGone) return;
-      // Toggle highlighting first, because it'll be cleared later if the
-      // editor is closed, and then we don't want to toggle it afterwards.
-      const inclInReply = $h.toggleClass(eventTarget, 'dw-replying');
+
+      const inclInReply = true; // old, legacy
 
       // Dupl code [5AKBR30W02]
       if (eds.isInEmbeddedCommentsIframe) {
@@ -262,7 +261,6 @@ export const PostActions = createComponent({
 
     const isEditingThisPost = post.isEditing;
     const isEditorOpenAlready = store.isEditorOpen;
-    const disabledClass = ' s_Disabled';
 
     // (Do return a <div> so there'll be some whitespace below for arrows to any replies.)
     if (post_shallRenderAsDeleted(post) || isCollapsed)
@@ -289,6 +287,8 @@ export const PostActions = createComponent({
         t.Solution);
     }
 
+    // (Previously, added a class .dw-replying [395QKTJR03] to the Reply button one
+    // had clicked — but now, with reply previews, no longer needed?)
     const replyButton = !store_mayIReply(store, post) || isEditorOpenAlready ? null :
           r.a({ className: 'dw-a dw-a-reply ' + makeReplyBtnIcon(store),
               onClick: this.onReplyClick },

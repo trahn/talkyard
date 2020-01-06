@@ -186,25 +186,29 @@ const ChatMessage = createComponent({
     const store: Store = this.props.store;
     const me: Myself = store.me;
     const post: Post = this.props.post;
-    const author: BriefUser = store.usersByIdBrief[post.authorId];
+    const author: BriefUser = store_getAuthorOrMissing(store, post);
     const headerProps: any = { store, post };
     headerProps.isFlat = true;
     headerProps.exactTime = true;
 
-    const isMine = me.id === author.id;
+    const isMine = me.id === author.id ||
+        // And, for now, for new post previews: [305KGWGH2]
+        author.id === UnknownUserId;
     const isMineClass = isMine ? ' s_My' : '';
-    const mayEditDelete = post.postType === PostType.ChatMessage && !state.isEditing && (
-        isMine || isStaff(me));
+    const mayEditDelete = post.postType === PostType.ChatMessage && !state.isEditing &&
+        !post.isPreview && (isMine || isStaff(me));
     headerProps.stuffToAppend = !mayEditDelete ? [] : [
         r.button({ className: 's_C_M_B s_C_M_B-Ed icon-edit' + isMineClass, key: 'e', onClick: this.edit },
           t.c.edit),
         // (Don't show a trash icon, makes the page look too cluttered.)
         r.button({className: 's_C_M_B s_C_M_B-Dl' + isMineClass, key: 'd', onClick: this.delete_ }, t.c.delete)];
 
+    const isPreviewClass = post.isPreview ? ' s_C_M-Prvw' : '';
+
     //headerProps.stuffToAppend.push(
     //  r.button({ className: 'esC_M_MoreB icon-ellipsis', key: 'm' }, "more"));
     return (
-      r.div({ className: 'esC_M', id: 'post-' + post.nr },
+      r.div({ className: 'esC_M' + isPreviewClass, id: 'post-' + post.nr },
         avatar.Avatar({ user: author, origins: store, size: AvatarSize.Small }),
         PostHeader(headerProps),
         PostBody({ store: store, post: post })));

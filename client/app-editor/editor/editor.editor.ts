@@ -576,6 +576,9 @@ export const Editor = createComponent({
   alertBadState: function(wantsToDoWhat = null): boolean {
     // REFACTOR  we call clearIsReplyingMarks from here, so cannot return directly if allFine,
     // which makse this unnecessarily complicated?
+    // :- ) But now clearIsReplyingMarks() is gone !
+    // so can simplify? this.  (it was old jQuery code that highlighted
+    // the active Reply button(s).)
 
     const store: Store = this.state.store;
     const allFine = this.state.draftStatus <= DraftStatus.NeedNotSave &&
@@ -600,22 +603,11 @@ export const Editor = createComponent({
 
     if (_.isNumber(this.state.editingPostNr)) {
       maybeAlert(t.e.PleaseSaveEdits);
-      // If this is an embedded editor, for an embedded comments page, that page
-      // will now have highlighted some reply button to indicate a reply is
-      // being written. But that's wrong, clear those marks.
-      if (eds.isInEmbeddedEditor) {
-        window.parent.postMessage(
-          JSON.stringify(['clearIsReplyingMarks', {}]), eds.embeddingOrigin);
-      }
-      else {
-        d.i.clearIsReplyingMarks();
-      }
       seemsBad = true;
     }
 
     if (this.state.newPageRole) {
       maybeAlert(t.e.PleaseSaveOrCancel);
-      d.i.clearIsReplyingMarks();
       seemsBad = true;
     }
 
@@ -813,6 +805,7 @@ export const Editor = createComponent({
           params.editingPostNr = this.state.editingPostNr;
         }
         ReactActions.showEditsPreview(params);
+        // We'll hide the preview, wheh closing the editor, here: (TGLPRVW)
       }
 
       ps.onDone?.();
@@ -1233,21 +1226,13 @@ export const Editor = createComponent({
   showEditor: function(opts: { scrollToPreview?: true } = {}) {
     this.makeSpaceAtBottomForEditor();
     this.setState({ visible: true });
-    if (eds.isInEmbeddedEditor) {
-      // 112233
-      window.parent.postMessage(JSON.stringify(['showEditor', {}]), eds.embeddingOrigin);
-    }
-
-    // 112233
-    ReactActions.patchTheStore({ setEditorOpen: true });  // oopss, send to comments iframe
-
-    // After rerender, focus the input fields, and maybe need to scroll, so the post we're editing
-    // or replying to, isn't occluded by the editor (then hard to know what we're editing).
-    setTimeout(() => {
+    ReactActions.onEditorOpen(() => {
+      // After rerender, focus the input fields, and maybe need to scroll, so the post we're editing
+      // or replying to, isn't occluded by the editor (then hard to know what we're editing).
       if (this.isGone) return;
       this.focusInputFields();
       this.updatePreviewSoon({ scrollToPreview: true });
-    }, 1);
+    });
   },
 
   saveDraftClearAndClose: function() {
@@ -1278,6 +1263,8 @@ export const Editor = createComponent({
       params.editingPostNr = this.state.editingPostNr;
     }
 
+    // Hide any preview we created when opening the editor (TGLPRVW),
+    // and reenable any Reply buttons.
     ReactActions.hideEditorAndPreview(params);
 
     this.returnSpaceAtBottomForEditor();

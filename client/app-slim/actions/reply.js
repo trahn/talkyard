@@ -20,14 +20,6 @@
 var d = { i: debiki.internal };
 
 
-d.i.clearIsReplyingMarks = function() {
-  var replyBtns = debiki2.$$byClass('dw-replying');
-  for (var i = 0; i < replyBtns.length; ++i) {
-    var buttonElem = replyBtns[i];
-    buttonElem.classList.remove('dw-replying');
-  }
-};
-
 
 // Try to remove. Rename to handlePagePatch?
 d.i.handleReplyResult = function(data, draftToDelete /* Draft | undefined */) {

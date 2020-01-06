@@ -522,7 +522,8 @@ ReactStore.activateMyself = function(anyNewMe: Myself) {
   // edit button. [UFINEDT])
   // (Do this also if not logged in — because there might still be drafts in one's
   // browser local sessionStorage.)
-  if (!eds.isInEmbeddedEditor) {
+  // Skip chat channels though _ chat message previews not yet implemented. [CHATPRVW]
+  if (!eds.isInEmbeddedEditor && !page_isChatChannel(store.currentPage?.pageRole)) {
     _.each(myPageData.myDrafts, (draft: Draft) => {
       const draftType = draft.forWhat.draftType;
       if (draftType === DraftType.Reply || draftType === DraftType.ProgressPost) {
