@@ -1127,7 +1127,7 @@ export const Editor = createComponent({
 
   saveNewPost: function() {
     this.throwIfBadTitleOrText(null, t.e.PleaseWriteSth);
-    Server.saveReply(this.state.replyToPostNrs, this.state.text,
+    ReactActions.saveReply(this.state.replyToPostNrs, this.state.text,
           this.state.anyPostType, this.state.draft, () => {
       this.callOnDoneCallback(true);
       this.clearAndClose();
@@ -1151,7 +1151,7 @@ export const Editor = createComponent({
   },
 
   postChatMessage: function() {
-    Server.insertChatMessage(this.state.text, this.state.draft, () => {
+    ReactActions.insertChatMessage(this.state.text, this.state.draft, () => {
       this.callOnDoneCallback(true);
       this.clearAndClose();
     });

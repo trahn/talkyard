@@ -514,7 +514,7 @@ const ChatMessageEditor = createComponent({
 
   saveChatMessage: function() {
     this.setState({ isSaving: true });
-    Server.insertChatMessage(this.state.text, this.state.draft, () => {
+    ReactActions.insertChatMessage(this.state.text, this.state.draft, () => {
       if (this.isGone) return;
       this.setState({
         text: '',

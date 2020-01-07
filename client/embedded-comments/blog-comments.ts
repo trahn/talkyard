@@ -555,12 +555,14 @@ function onMessage(event) {
       sendToEditor(event.data);
       break;
     case 'handleReplyResult':
+      assertIsFromEditorToComments();
       sendToComments(event.data);
       break;
     case 'editorEditPost':
       sendToEditor(event.data);
       break;
     case 'handleEditResult':
+      assertIsFromEditorToComments();
       sendToComments(event.data);
       break;
   }

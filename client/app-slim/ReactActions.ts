@@ -930,11 +930,45 @@ export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
 }
 
 
+export function saveReply(postNrs: PostNr[], text: string, anyPostType: number,
+      draftToDelete: Draft | undefined, onDone: () => void) {
+  Server.saveReply(postNrs, text, anyPostType, draftToDelete?.draftNr, (storePatch) => {
+    handleReplyResult(storePatch, draftToDelete, onDone);
+  });
+}
+
+
+export function insertChatMessage(text: string, draftToDelete: Draft | undefined,
+      onDone: () => void) {
+  Server.insertChatMessage(text, draftToDelete?.draftNr, (storePatch) => {
+    handleReplyResult(storePatch, draftToDelete, onDone);
+  });
+}
+
+
+export function handleReplyResult(patch: StorePatch, draftToDelete: Draft | undefined,
+      onDone: () => void) {
+  if (eds.isInEmbeddedEditor) {
+    if (patch.newlyCreatedPageId) {
+      // Update this, so subsequent server requests, will use the correct page id. [4HKW28]
+      eds.embeddedPageId = patch.newlyCreatedPageId;
+    }
+    // Send a message to the embedding page, which will forward it to
+    // the comments iframe, which will show the new comment.
+    sendToCommentsIframe(['handleReplyResult', [patch, draftToDelete]]);
+    onDone?.();
+    return;
+  }
+
+  debiki2.ReactActions.patchTheStore({ ...patch, deleteDraft: draftToDelete }, onDone);
+}
+
+
 export function patchTheStore(storePatch: StorePatch, onDone?: () => void) {
   ReactDispatcher.handleViewAction({
     actionType: actionTypes.PatchTheStore,
     storePatch,
-    onDone
+    onDone,
   });
 }
 

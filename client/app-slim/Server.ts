@@ -1359,7 +1359,7 @@ export function unpinPage(success: () => void) {
 
 
 export function saveReply(postNrs: PostNr[], text: string, anyPostType: number,
-      draftToDelete: Draft | undefined, success: () => void) {
+      deleteDraftNr: DraftNr | undefined, success: (storePatch: StorePatch) => void) {
   postJson('/-/reply', {
     data: {
       // Specify altPageId and embeddingUrl, so any embedded page can be created lazily. [4AMJX7]
@@ -1369,28 +1369,22 @@ export function saveReply(postNrs: PostNr[], text: string, anyPostType: number,
       postNrs: postNrs,
       postType: anyPostType || PostType.Normal,
       text: text,
-      deleteDraftNr: draftToDelete?.draftNr,
+      deleteDraftNr,
     },
-    success: (response) => {
-      d.i.handleReplyResult(response, draftToDelete);
-      success();
-    }
+    success
   });
 }
 
 
-export function insertChatMessage(text: string, draftToDelete: Draft | undefined,
-      success: () => void) {
+export function insertChatMessage(text: string, deleteDraftNr: DraftNr | undefined,
+      success: (storePatch: StorePatch) => void) {
   postJson('/-/chat', {
     data: {
       pageId: getPageId(),
       text: text,
-      deleteDraftNr: draftToDelete?.draftNr,
+      deleteDraftNr,
     },
-    success: (response) => {
-      d.i.handleReplyResult(response, draftToDelete);
-      success();
-    }
+    success
   });
 }
 
