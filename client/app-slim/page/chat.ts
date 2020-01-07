@@ -626,7 +626,11 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
   },
 
   render: function () {
-    if (this.state.advancedEditorInstead || !this.state.scriptsLoaded)
+    const store: Store = this.props.store;
+
+    if (store.isEditorOpen || !this.state.scriptsLoaded ||
+        // Can remove this check now? using  isEditorOpen  above instead
+        this.state.advancedEditorInstead)
       return null;
 
     const state: ChatMessageEditorState = this.state;
