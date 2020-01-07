@@ -903,6 +903,7 @@ export function scrollToPreview(ps: {
 export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
   // @ifdef DEBUG
   dieIf(ps.replyToNr && ps.editingPostNr, 'TyE4KTJW035M');
+  dieIf(ps.replyToNr && !ps.anyPostType, 'TyE72SKJRW46');
   // @endif
 
   if (eds.isInEmbeddedEditor) {

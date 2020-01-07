@@ -223,11 +223,13 @@ const ChatMessage = createComponent({
         PostHeader(headerProps),
         PostBody({ store: store, post: post })));
 
+    const isEditingExistingPost = post.nr >= MinRealPostNr;
+
     const anyPreviewInfo = !post.isPreview ? null :
         r.div({ className: 's_T_YourPrvw' },
           t.e.PreviewC + ' ',
           r.span({ className: 's_T_YourPrvw_ToWho' },
-            post.isEditing ?
+            isEditingExistingPost ?
                 "Your edits: " : "Your chat message: "));  // I18N [052RKGUCG6]
 
     return (anyPreviewInfo ?
@@ -591,6 +593,7 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
     this.setState({ isSaving: true });
     ReactActions.insertChatMessage(this.state.text, this.state.draft, () => {
       if (this.isGone) return;
+      ReactActions.hideEditorAndPreview({});
       const newState: Partial<ChatMessageEditorState> = {
         text: '',
         isSaving: false,
