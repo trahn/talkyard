@@ -794,6 +794,10 @@ let origPostBeforeEdits: Post | undefined;
 export function showEditsPreview(ps: ShowEditsPreviewParams) {
   // @ifdef DEBUG
   dieIf(ps.replyToNr && ps.editingPostNr, 'TyE73KGTD02');
+  dieIf(ps.replyToNr && !ps.anyPostType, 'TyE502KGSTJ46');
+  // The embedded comments editor doesn't include any page id when sending the
+  // showEditsPreview message — it doesn't know which page we're looking at.
+  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe, 'TyE630KPR5');
   // @endif
 
   if (eds.isInEmbeddedEditor) {
@@ -801,12 +805,6 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
     sendToCommentsIframe(['showEditsPreview', { ...ps, editorIframeHeightPx }]);
     return;
   }
-
-  // The embedded editor doesn't include any page id when sending the
-  // showEditsPreview message — it doesn't know which page we're looking at.
-  // @ifdef DEBUG
-  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe, 'TyE630KPR5');
-  // @endif
 
   const store: Store = ReactStore.allData();
   const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
@@ -823,7 +821,6 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   // @ifdef DEBUG
   // Chat messages don't reply to any particular post — has no parent nr. [CHATPRNT]
   dieIf(ps.replyToNr && isChat, 'TyE7WKJTGJ024');
-  dieIf(ps.replyToNr && !ps.anyPostType, 'TyE502KGSTJ46');
   // @endif
 
   let patch: StorePatch;
@@ -851,6 +848,7 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
     ReactActions.patchTheStore(patch, () => {
       if (ps.scrollToPreview) {
         scrollToPreview({
+          isChat,
           isEditingBody: ps.editingPostNr === BodyNr,
           editorIframeHeightPx: ps.editorIframeHeightPx,
         });
@@ -860,8 +858,10 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
 }
 
 
-export function scrollToPreview(
-      ps: { isEditingBody?: boolean, editorIframeHeightPx?: number } = {}) {
+export function scrollToPreview(ps: {
+        isChat?: boolean,
+        isEditingBody?: boolean,
+        editorIframeHeightPx?: number } = {}) {
 
   if (eds.isInEmbeddedEditor) {
     const editorIframeHeightPx = window.innerHeight;
@@ -874,13 +874,28 @@ export function scrollToPreview(
 
   // Break out function? Also see FragActionHashScrollToBottom, tiny bit dupl code.
   // Scroll to the preview we're currently editing (not to any inactive draft previews).
-  const selector = ps.isEditingBody ? '.dw-ar-t > .s_T_YourPrvw' : '.s_T-Prvw-IsEd';
+  const selector = ps.isEditingBody ? '.dw-ar-t > .s_T_YourPrvw' : (
+    ps.isChat ? '.s_T_YourPrvw + .esC_M' : '.s_T-Prvw-IsEd');
+
   const marginTop = ps.isEditingBody ? 110 : 50;
+
+  // If we're in an embedded comments iframe, then, there's another iframe for the
+  // editor. Then scroll a bit more, so that other iframe won't occlude the preview.
+  let editorHeight = ps.editorIframeHeightPx || 0;
+
+  // Or, if we're in a chat, there's a chat text box at the bottom, on top of
+  // the chat messages.
+  if (ps.isChat) {
+    // @ifdef DEBUG
+    dieIf(editorHeight !== 0, 'TyE406KWSDJS23');
+    // @endif
+    const editorElem = $first('.esC_Edtr');
+    editorHeight = editorElem?.clientHeight || 0;
+  }
+
   utils.scrollIntoViewInPageColumn(selector, {
     marginTop,
-    // If we're in an embedded comments iframe, then, there's another iframe for the
-    // editor. Then scroll a bit more, so that other iframe won't occlude the preview.
-    marginBottom: 30 + (ps.editorIframeHeightPx || 0),
+    marginBottom: 30 + editorHeight,
   });
 }
 
@@ -898,20 +913,16 @@ export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
 
   const store: Store = ReactStore.allData();
   const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
+  const isChat = page_isChatChannel(page.pageRole);
 
   let patch: StorePatch = {};
   let highlightPostNrAfter: PostNr;
 
-  if (ps.replyToNr) {
-    const postToReplyTo = page.postsByNr[ps.replyToNr];
-    patch = ps.anyDraft && ps.keepDraft
-        ? store_makeDraftPostPatch(store, page, ps.anyDraft)
-        : store_makeDeletePreviewPatch(
-            store, page, postToReplyTo, ps.anyPostType);
-    highlightPostNrAfter = post_makePreviewIdNr(ps.replyToNr, ps.anyPostType);
+  if (ps.keepPreview) {
+    // Thsi happens if we're editing a chat message — then we can continue typing
+    // in the cat message text box.
   }
-
-  if (ps.editingPostNr) {
+  else if (ps.editingPostNr) {
     if (origPostBeforeEdits) {
       highlightPostNrAfter = origPostBeforeEdits.nr;
       patch = {
@@ -922,6 +933,13 @@ export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
       patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
       origPostBeforeEdits = null;
     }
+  }
+  else if (ps.replyToNr || isChat) {
+    const postType = ps.anyPostType || PostType.ChatMessage;
+    patch = ps.anyDraft && ps.keepDraft
+        ? store_makeDraftPostPatch(store, page, ps.anyDraft)
+        : store_makeDeletePreviewPatch(store, ps.replyToNr, postType);
+    highlightPostNrAfter = post_makePreviewIdNr(ps.replyToNr, postType);
   }
 
   patch = { ...patch, setEditorOpen: false };
@@ -935,7 +953,7 @@ export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
 
 
 export function saveReply(postNrs: PostNr[], text: string, anyPostType: number,
-      draftToDelete: Draft | undefined, onDone: () => void) {
+      draftToDelete: Draft | undefined, onDone?: () => void) {
   Server.saveReply(postNrs, text, anyPostType, draftToDelete?.draftNr, (storePatch) => {
     handleReplyResult(storePatch, draftToDelete, onDone);
   });
@@ -943,7 +961,7 @@ export function saveReply(postNrs: PostNr[], text: string, anyPostType: number,
 
 
 export function insertChatMessage(text: string, draftToDelete: Draft | undefined,
-      onDone: () => void) {
+      onDone?: () => void) {
   Server.insertChatMessage(text, draftToDelete?.draftNr, (storePatch) => {
     handleReplyResult(storePatch, draftToDelete, onDone);
   });
@@ -951,7 +969,7 @@ export function insertChatMessage(text: string, draftToDelete: Draft | undefined
 
 
 export function handleReplyResult(patch: StorePatch, draftToDelete: Draft | undefined,
-      onDone: () => void) {
+      onDone?: () => void) {
   if (eds.isInEmbeddedEditor) {
     if (patch.newlyCreatedPageId) {
       // Update this, so subsequent server requests, will use the correct page id. [4HKW28]

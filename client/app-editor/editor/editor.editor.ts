@@ -67,11 +67,51 @@ export const listUsernamesTrigger = {
 };
 
 
-export const Editor = createComponent({
+interface EditorState {
+  store: Store;
+  visible: boolean;
+  replyToPostNrs: PostNr[];
+  anyPostType?: PostType;
+  editorsCategories?: Category[];
+  editorsPageId?: PageId;
+  editingPostNr?: PostNr;
+  editingPostUid?: PostId;
+  isWritingChatMessage?: boolean;
+  messageToUserIds: UserId[],
+  newForumTopicCategoryId?: CategoryId;
+  newPageRole?: PageType;
+  editingPostRevisionNr?: number;
+  text: string;
+  title: string;
+  showTitleErrors?: boolean;
+  showTextErrors?: boolean;
+  draftStatus: DraftStatus;
+  draft?: Draft;
+  safePreviewHtml: string;
+  onDone?:  EditsDoneHandler;
+  guidelines?: Guidelines;
+  backdropOpacity: 0,
+  isUploadingFile: boolean;
+  fileUploadProgress: number;
+  uploadFileXhr?: any;
+  showSimilarTopics?: boolean;
+  searchResults?: any;
+}
+
+interface Guidelines {
+  writingWhat: WritingWhat,
+  categoryId: CategoryId;
+  pageRole: PageType;
+  safeHtml: string;
+  hidden: boolean;
+}
+
+
+export const Editor = createFactory<any, EditorState>({
   displayName: 'Editor',
   mixins: [debiki2.StoreListenerMixin],
 
-  getInitialState: function() {
+  getInitialState: function(): EditorState {
     return {
       store: debiki2.ReactStore.allData(),
       visible: false,
@@ -361,6 +401,9 @@ export const Editor = createComponent({
       return;
     }
 
+    // No multireplies — disabled.
+    dieIf(postNrs.length >= 2, 'TyE35KKGJRT0');
+
     if (this.state.editorsPageId !== store.currentPageId && postNrs.length) {
       // The post nrs on this different page, won't match the ones in postNrs.
       // So ignore this.
@@ -372,6 +415,11 @@ export const Editor = createComponent({
 
     const index = postNrs.indexOf(postNr);
     if (inclInReply && index >= 0) {
+      // 2020: Dead code.
+      die('TyE305WKGJS34');
+      /*
+      // Now almost certainly this can be removed — Reply buttons hidden,
+      // once edior open. So cannot get out of sync?
       // Editor out of sync with reply button states: reply button wants to add,
       // editor wants to remove the post, from the reply-to-list.
       // Happened in embedded comments iframe because of a bug. Fixed now, but keep this
@@ -383,15 +431,17 @@ export const Editor = createComponent({
       // @endif
       postNrs = [postNr];
       this.showEditor();
+      */
     }
     else if (index === -1) {
       // We're starting to write a reply to postNr.
       postNrs.push(postNr);
-      this.showEditor({ scrollToPreview: true });
     }
     else {
+      // 2020: Dead code.
+      die('TyE305WKGJS34');
       // Remove postNr — we're not going to reply to it any longer.
-      postNrs.splice(index, 1);
+      //postNrs.splice(index, 1);
     }
 
     // Don't change post type from flat to something else.
@@ -399,13 +449,16 @@ export const Editor = createComponent({
     if (postNrs.length >= 2 && this.state.anyPostType === PostType.Flat) {
       postType = PostType.Flat;
     }
-    this.setState({
+
+    const newState: Partial<EditorState> = {
       anyPostType: postType,
       editorsCategories: store.currentCategories,
       editorsPageId: store.currentPageId,
       replyToPostNrs: postNrs,
       text: this.state.text || makeDefaultReplyText(store, postNrs),
-    });
+    };
+    this.showEditor(newState);
+
     if (!postNrs.length) {
       this.saveDraftClearAndClose();
       return;
@@ -439,7 +492,6 @@ export const Editor = createComponent({
       return;
     Server.loadDraftAndText(postNr, (response: LoadDraftAndTextResponse) => {
       if (this.isGone) return;
-      this.showEditor({ scrollToPreview: true });
       const store: Store = this.state.store;
       const draft: Draft | undefined = response.draft;
 
@@ -451,7 +503,8 @@ export const Editor = createComponent({
       // This can fail, if the post was moved by staff to a different page? Then it
       // gets a new postNr. Then do what? Show a "this post was moved to: ..." dialog?
       dieIf(postNr !== response.postNr, 'TyE23GPKG4');
-      this.setState({
+
+      const newState: Partial<EditorState> = {
         anyPostType: null,
         editorsCategories: store.currentCategories,
         editorsPageId: response.pageId,
@@ -462,10 +515,9 @@ export const Editor = createComponent({
         onDone: onDone,
         draftStatus: DraftStatus.NothingHappened,
         draft,
-      }, () => {
-        this.focusInputFields();
-        this.updatePreviewSoon();
-      });
+      };
+
+      this.showEditor(newState);
     });
   },
 
@@ -476,11 +528,11 @@ export const Editor = createComponent({
     dieIf(role === PageRole.PrivateChat && categoryId, 'EsE5KF024');
     // But other topics should be placed in a category.
     dieIf(role !== PageRole.PrivateChat && !categoryId, 'EsE8PE2B');
-    this.showEditor();
+
     const text = this.state.text || '';
     const store: Store = this.state.store;
 
-    this.setState({
+    const newState: Partial<EditorState> = {
       anyPostType: null,
       editorsCategories: store.currentCategories,
       editorsPageId: store.currentPageId,
@@ -489,8 +541,9 @@ export const Editor = createComponent({
       text: text,
       showSimilarTopics: true,
       searchResults: null,
-    },
-      this.updatePreviewSoon);
+    };
+
+    this.showEditor(newState);
 
     const draftLocator: DraftLocator = {
       draftType: DraftType.Topic,
@@ -509,9 +562,9 @@ export const Editor = createComponent({
         onDone?: EditsDoneHandler) {
     if (this.alertBadState())
       return;
+
     const store: Store = this.state.store;
-    this.showEditor();
-    this.setState({
+    const newState: Partial<EditorState> = {
       editorsCategories: store.currentCategories,
       editorsPageId: store.currentPageId,
       isWritingChatMessage: true,
@@ -519,27 +572,31 @@ export const Editor = createComponent({
       draft,
       draftStatus,
       onDone,
-    });
+    };
+
+    this.showEditor(newState);
     // No guidelines for chat messages, because usually a smaller "inline" editor is used instead.
   },
 
   openToWriteMessage: function(userId: UserId) {
     if (this.alertBadState())
       return;
-    this.showEditor();
     const store: Store = this.state.store;
-    this.setState({
+    const newState: Partial<EditorState> = {
       editorsCategories: store.currentCategories,
       editorsPageId: store.currentPageId,
       messageToUserIds: [userId],
       text: '',
       newPageRole: PageRole.FormalMessage,
-    });
+    };
+    
+    this.showEditor(newState);
+
     const draftLocator: DraftLocator = {
       draftType: DraftType.DirectMessage,
       toUserId: userId,
     };
-    this.loadDraftAndGuidelines(draftLocator, WritingWhat.NewPage, PageRole.FormalMessage);
+    this.loadDraftAndGuidelines(draftLocator, WritingWhat.NewPage, PageRole.FormalMessage);   // hmmprvw
     this.showAndFadeOutBackdrop();
   },
 
@@ -558,7 +615,7 @@ export const Editor = createComponent({
     setTimeout(fadeBackdrop, 1400);
   },
 
-  scrollPostIntoView: function(postNr) {
+  scrollPostIntoView: function(postNr) {   // hmmprvw
     // send message to iframe parent?
 
     const postElem = $byId('post-' + postNr);
@@ -626,7 +683,7 @@ export const Editor = createComponent({
         draftStatus: DraftStatus.NothingHappened,
         text: draft ? draft.text : '',
         title: draft ? draft.title : '',
-      });
+      });    // hmmprvw
       return;
     }
 
@@ -671,7 +728,7 @@ export const Editor = createComponent({
         title: draft ? draft.title : '',
         guidelines,
       },
-        this.focusInputFields);
+        this.focusInputFields);   // hmmprvw
     });
   },
 
@@ -776,7 +833,7 @@ export const Editor = createComponent({
     // (COULD verify still edits same post/thing, or not needed?)
     const isEditingBody = this.state.editingPostNr === BodyNr;
     const sanitizerOpts = {
-      allowClassAndIdAttr: true, // or only if isEditingBody?
+      allowClassAndIdAttr: true, // or only if isEditingBody?  dupl [304KPGSD25]
       allowDataAttr: isEditingBody
     };
 
@@ -1051,7 +1108,8 @@ export const Editor = createComponent({
     }
 
     this.setState({
-      draftStatus: callbackThatClosesEditor ? DraftStatus.SavingBig : DraftStatus.SavingSmall,
+      draftStatus: callbackThatClosesEditor ?
+          DraftStatus.SavingBig : DraftStatus.SavingSmall,
     });
 
     this.isSavingDraft = true;
@@ -1145,6 +1203,8 @@ export const Editor = createComponent({
       deleteDraftNr: this.anyDraftNr(),
     };
     Server.createPage(data, (newPageId: string) => {
+      // Could, but not needed, since assign() below:
+      //   this.callOnDoneCallback(true);
       this.clearAndClose();
       window.location.assign('/-' + newPageId);
     });
@@ -1162,6 +1222,8 @@ export const Editor = createComponent({
     const state = this.state;
     Server.startPrivateGroupTalk(state.title, state.text, this.state.newPageRole,
         state.messageToUserIds, this.anyDraftNr(), (pageId: PageId) => {
+      // Could, but not needed, since assign() below:
+      //   this.callOnDoneCallback(true);
       this.clearAndClose();
       window.location.assign('/-' + pageId);
     });
@@ -1223,13 +1285,15 @@ export const Editor = createComponent({
     // Else: the editor covers 100% anyway.
   },
 
-  showEditor: function(opts: { scrollToPreview?: true } = {}) {
+  showEditor: function(statePatch: Partial<EditorState>) {
+    // @ifdef DEBUG
+    dieIf(!_.isUndefined(statePatch.visible), 'TyE305WKTJP4');
+    // @endif
     this.makeSpaceAtBottomForEditor();
-    this.setState({ visible: true });
+    const newState: Partial<EditorState> = { ...statePatch, visible: true };
+    this.setState(newState); //, onDone);
     ReactActions.onEditorOpen(() => {
-      // After rerender, focus the input fields, and maybe need to scroll, so the post we're editing
-      // or replying to, isn't occluded by the editor (then hard to know what we're editing).
-      if (this.isGone) return;
+      if (this.isGone || !this.state.visible) return;
       this.focusInputFields();
       this.updatePreviewSoon({ scrollToPreview: true });
     });
@@ -1241,7 +1305,8 @@ export const Editor = createComponent({
   },
 
   clearAndClose: function(ps: { keepDraft?: true, upToDateDraft?: Draft } = {}) {
-    const anyDraft: Draft = ps.upToDateDraft || this.state.draft;
+    const state: EditorState = this.state;
+    const anyDraft: Draft = ps.upToDateDraft || state.draft;
 
     if (!ps.keepDraft && anyDraft) {
       removeFromSessionStorage(anyDraft.forWhat);
@@ -1250,17 +1315,22 @@ export const Editor = createComponent({
     const params: HideEditsorAndPreviewParams = {
       anyDraft,
       keepDraft: ps.keepDraft,
-      editorsPageId: this.state.editorsPageId,
+      editorsPageId: state.editorsPageId,
     };
 
-    const postNrs: PostNr[] = this.state.replyToPostNrs;
+    const postNrs: PostNr[] = state.replyToPostNrs;
     if (postNrs.length === 1) {
       params.replyToNr = postNrs[0];
-      params.anyPostType = this.state.anyPostType;
+      params.anyPostType = state.anyPostType;
     }
 
-    if (this.state.editingPostUid) {
-      params.editingPostNr = this.state.editingPostNr;
+    if (state.editingPostUid) {
+      params.editingPostNr = state.editingPostNr;
+    }
+
+    if (state.isWritingChatMessage) {
+      // Then we'll continue typing, in the simple chat message text box.
+      params.keepPreview = true;
     }
 
     // Hide any preview we created when opening the editor (TGLPRVW),

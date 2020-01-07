@@ -1576,12 +1576,12 @@ export function loadAllTags(success: (tags: string[]) => void) {
 
 
 export function loadTagsAndStats() {
-  get('/-/load-tags-and-stats', ReactActions.patchTheStore);
+  get('/-/load-tags-and-stats', r => ReactActions.patchTheStore(r));
 }
 
 
 export function loadMyTagNotfLevels() {
-  get('/-/load-my-tag-notf-levels', ReactActions.patchTheStore);
+  get('/-/load-my-tag-notf-levels', r => ReactActions.patchTheStore(r));
 }
 
 

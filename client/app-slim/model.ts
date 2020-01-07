@@ -203,7 +203,7 @@ interface EditorIframeHeight {
 }
 
 interface ShowEditsPreviewParams extends EditorIframeHeight {
-  scrollToPreview?: true;
+  scrollToPreview?: boolean;
   safeHtml: string;
   editorsPageId?: PageId;
   anyPostType?: PostType;
@@ -213,8 +213,9 @@ interface ShowEditsPreviewParams extends EditorIframeHeight {
 
 
 interface HideEditsorAndPreviewParams {
-  anyDraft?: Draft,
-  keepDraft: boolean,
+  anyDraft?: Draft;
+  keepDraft?: boolean;
+  keepPreview?: true;
   editorsPageId?: PageId;
   anyPostType?: PostType;
   replyToNr?: PostNr;
@@ -1648,7 +1649,7 @@ interface UserAccountLoginMethod {  // Maybe repl w Identity = Scala: JsIdentity
 interface LoadDraftAndTextResponse {
   pageId: PageId;
   postNr: PostNr;
-  postUid: string; // CLEAN_UP RENAME to just postId.
+  postUid: PostId; // CLEAN_UP RENAME to just postId.
   currentText: string;
   currentRevisionNr: number;
   draft?: Draft;
