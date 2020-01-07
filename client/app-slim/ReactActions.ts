@@ -795,9 +795,6 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   // @ifdef DEBUG
   dieIf(ps.replyToNr && ps.editingPostNr, 'TyE73KGTD02');
   dieIf(ps.replyToNr && !ps.anyPostType, 'TyE502KGSTJ46');
-  // The embedded comments editor doesn't include any page id when sending the
-  // showEditsPreview message — it doesn't know which page we're looking at.
-  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe, 'TyE630KPR5');
   // @endif
 
   if (eds.isInEmbeddedEditor) {
@@ -818,9 +815,13 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
 
   const isChat = page_isChatChannel(page.pageRole);
 
+  // A bit dupl debug checks (49307558).
   // @ifdef DEBUG
   // Chat messages don't reply to any particular post — has no parent nr. [CHATPRNT]
   dieIf(ps.replyToNr && isChat, 'TyE7WKJTGJ024');
+  // The embedded comments editor doesn't include any page id when sending the
+  // showEditsPreview message — it doesn't know which page we're looking at.
+  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe && !isChat, 'TyE630KPR5');
   // @endif
 
   let patch: StorePatch;
@@ -914,7 +915,16 @@ export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
 
   const store: Store = ReactStore.allData();
   const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
-  const isChat = page_isChatChannel(page.pageRole);
+  const isChat = page && page_isChatChannel(page.pageRole);
+
+  // A bit dupl debug checks (49307558).
+  // @ifdef DEBUG
+  dieIf(!page, 'TyE407AKSHPW24');
+  // @endif
+  // @ifdef DEBUG
+  dieIf(ps.replyToNr && isChat, 'TyE62SKHSW604');
+  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe && !isChat, 'TyE6QSADTH04');
+  // @endif
 
   let patch: StorePatch = {};
   let highlightPostNrAfter: PostNr;
