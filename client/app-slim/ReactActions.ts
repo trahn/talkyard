@@ -818,15 +818,15 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   if (!page)
     return;
 
-  let patch: StorePatch;
+  const isChat = page_isChatChannel(page.pageRole);
 
-  if (ps.replyToNr) {
-    // Could debounce this even more:
-    // Show an inline preview, where the reply will appear.
-    const postToReplyTo = page.postsByNr[ps.replyToNr];
-    patch = store_makeNewPostPreviewPatch(
-        store, page, postToReplyTo, ps.safeHtml, ps.anyPostType);
-  }
+  // @ifdef DEBUG
+  // Chat messages don't reply to any particular post — has no parent nr. [CHATPRNT]
+  dieIf(ps.replyToNr && isChat, 'TyE7WKJTGJ024');
+  dieIf(ps.replyToNr && !ps.anyPostType, 'TyE502KGSTJ46');
+  // @endif
+
+  let patch: StorePatch;
 
   if (ps.editingPostNr) {
     // Replace the real post with a copy that includes the edited html. [EDPVWPST]
@@ -836,11 +836,15 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
     }
     patch = store_makeEditsPreviewPatch(store, page, postToEdit, ps.safeHtml);
   }
+  else if (ps.replyToNr || isChat) {
+    const postType = ps.anyPostType || PostType.ChatMessage;
+    // Show an inline preview, where the reply will appear.
+    patch = store_makeNewPostPreviewPatch(
+        store, page, ps.replyToNr, ps.safeHtml, postType);
+  }
 
   // @ifdef DEBUG
-  dieIf(!patch &&
-      // Chat message previews not yet implemented. [CHATPRVW]
-      !page_isChatChannel(page.pageRole), 'TyE5WKDAW25');
+  dieIf(!patch, 'TyE5WKDAW25');
   // @endif
 
   if (patch) {

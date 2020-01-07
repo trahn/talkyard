@@ -290,7 +290,7 @@ declare namespace debiki2 {
   function store_findCatsWhereIMayCreateTopics(store: Store): Category[];
   function store_makeDraftPostPatch(store: Store, page: Page, draft: Draft): StorePatch;
   function post_makePreviewIdNr(parentPostNr: PostNr, newPostType: PostType): PostNr & PostId;
-  function store_makeNewPostPreviewPatch(store: Store, page: Page, post: Post, safePreviewHtml: string, newPostType?: PostType): StorePatch;
+  function store_makeNewPostPreviewPatch(store: Store, page: Page, parentPostNr: PostNr, safePreviewHtml: string, newPostType?: PostType): StorePatch;
   function store_makeEditsPreviewPatch(store: Store, page: Page, post: Post, safePreviewHtml: string): StorePatch;
   function store_makeDeletePreviewPatch(store: Store, page: Page, post: Post, newPostType?: PostType): StorePatch;
   var hasErrorCode;

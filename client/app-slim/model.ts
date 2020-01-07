@@ -230,14 +230,14 @@ interface Post {
   // Client side only ------
   // If this post / these changes don't yet exist — it's a preview.
   isPreview?: boolean;
-  isForDraftNr?: DraftNr;
+  isForDraftNr?: DraftNr | true;
   // If we're editing this post right now.
   isEditing?: boolean;
   // -----------------------
 
   uniqueId: PostId; // CLEAN_UP RENAME to id
   nr: PostNr;
-  parentNr: PostNr;
+  parentNr?: PostNr; // undefined, for chat messages [CHATPRNT]
   multireplyPostNrs: PostNr[];
   postType?: PostType;
   authorId: UserId;

@@ -716,10 +716,11 @@ export function store_makeDraftPostPatch(store: Store, page: Page, draft: Draft)
 }
 
 
-export function store_makeNewPostPreviewPatch(store: Store, page: Page, post: Post,
-      safePreviewHtml: string, newPostType?: PostType): StorePatch {
+export function store_makeNewPostPreviewPatch(store: Store, page: Page,
+      parentPostNr: PostNr | undefined, safePreviewHtml: string,
+      newPostType?: PostType): StorePatch {
   const previewPost = store_makePreviewPost({
-      store, parentPostNr: post.nr, safePreviewHtml, newPostType, isEditing: true });
+      store, parentPostNr, safePreviewHtml, newPostType, isEditing: true });
   const patch: StorePatch = {
     pageVersionsByPageId: {},
     postsByPageId: {},
@@ -792,7 +793,7 @@ export function store_makePostForDraft(store: Store, draft: Draft): Post | null 
 
 interface MakePreviewParams {
   store: Store;
-  parentPostNr: PostNr;
+  parentPostNr?: PostNr;
   safePreviewHtml?: string;
   unsafeSource?: string;
   newPostType?: PostType;
@@ -808,8 +809,12 @@ export function post_makePreviewIdNr(parentPostNr: PostNr, newPostType: PostType
   const previewOffset = -1000 * 1000;
   const previewPostIdNr =
       previewOffset -
-      // Different previews when replying to different posts.
-      parentPostNr * 100 -
+      // We create one preview posts, per parent post we're replying to, so
+      // inclue the parent post nr, so the preview posts won't overwrite each other,
+      // in the page.postsByNr map.
+      // Chat messages have no parent post; there can be only one preview
+      // chat message [CHATPRNT].
+      (parentPostNr || 0) * 100 -
       // Different previews for progress orig-post reply, and discussion orig-post reply.
       // If is editing, not replying, use 0.
       (newPostType || 0);

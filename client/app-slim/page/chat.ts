@@ -207,11 +207,20 @@ const ChatMessage = createComponent({
 
     //headerProps.stuffToAppend.push(
     //  r.button({ className: 'esC_M_MoreB icon-ellipsis', key: 'm' }, "more"));
-    return (
+    const chatMessage = (
       r.div({ className: 'esC_M' + isPreviewClass, id: 'post-' + post.nr },
         avatar.Avatar({ user: author, origins: store, size: AvatarSize.Small }),
         PostHeader(headerProps),
         PostBody({ store: store, post: post })));
+
+    const anyPreviewInfo = !post.isPreview ? null :
+        r.div({ className: 's_T_YourPrvw' },
+          t.e.PreviewC + ' ',
+          r.span({ className: 's_T_YourPrvw_ToWho' },
+            "Your chat message: "));  // I18N [052RKGUCG6]
+
+    return (anyPreviewInfo ?
+        rFragment({}, anyPreviewInfo, chatMessage) : chatMessage);
   }
 });
 
@@ -491,23 +500,18 @@ const ChatMessageEditor = createComponent({
     }
   },
 
-  onKeyDown: function(event) {
-    // In my Chrome, Ctrl + Enter won't fire onKeyPress (only onKeyDown) [5KU8W2], and won't append
-    // any newline. Why? Append the newline ourselves.
-    if (event_isCtrlEnter(event)) {
-      this.setState({ text: this.state.text + '\n' });
-      // Prevent FF, Edge, Safari from adding yet another newline in onKeyPress().
-      event.preventDefault();
-    }
-  },
+  onKeyPressOrKeyDown: function(event) {
+    // Let Return mean newline everywhere, and ctrl+return means Submit everywhere.
+    // (Typically, in a chat, Return/Enter means "post my message". However, in Talkyard's
+    // "advanced" editor, hitting Return adds a newline — so people (well at least
+    // my (KajMagnus) father) get confused if Return instead submits one's chat message.)
 
-  onKeyPress: function(event) {
-    if (event_isEnter(event) && !event_isCtrlEnter(event) && !event_isShiftEnter(event)) {
-      // Enter or Return without Shift or Ctrl down means "post chat message".
+    // In my Chrome, Ctrl + Enter won't fire onKeyPress, only onKeyDown. [5KU8W2]
+    if (event_isCtrlEnter(event)) {
       const isNotEmpty = /\S/.test(this.state.text);
       if (isNotEmpty) {
-        this.saveChatMessage();
         event.preventDefault();
+        this.saveChatMessage();
       }
     }
   },
@@ -580,8 +584,8 @@ const ChatMessageEditor = createComponent({
         ReactTextareaAutocomplete({ className: 'esC_Edtr_textarea', ref: 'textarea',
           value: anyDraftLoaded ? this.state.text : t.e.LoadingDraftDots,
           onChange: this.onTextEdited,
-          onKeyPress: this.onKeyPress,
-          onKeyDown: this.onKeyDown,
+          onKeyPress: this.onKeyPressOrKeyDown,
+          onKeyDown: this.onKeyPressOrKeyDown,
           closeOnClickOutside: true,
           placeholder: t.c.TypeHere,
           disabled: disabled,
