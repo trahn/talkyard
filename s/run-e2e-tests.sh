@@ -78,7 +78,7 @@ function runE2eTest {
   # '-e 2 -o 0' and '-e 2 -o 1' at the same time.
 
   # Incl $testStartId so ps-grep-kill below kills only wdio processes we start here.
-  test_log_file="logs/e2e-site-nr-s$site_nr-start-$testStartId.log"
+  test_log_file="logs/failed-e2e-test-$testStartId-nr-$site_nr.log"
   cmd="$@ --deleteOldSite --localHostname=$local_hostname --dummy-wdio-test $testStartId"
 
   echo "————————————————————————————————————————————————————————————————————"
