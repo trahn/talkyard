@@ -821,7 +821,8 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   dieIf(ps.replyToNr && isChat, 'TyE7WKJTGJ024');
   // The embedded comments editor doesn't include any page id when sending the
   // showEditsPreview message — it doesn't know which page we're looking at.
-  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe && !isChat, 'TyE630KPR5');
+  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe &&
+      !isChat && location.pathname.indexOf(ApiUrlPathPrefix) === -1, 'TyE630KPR5');
   // @endif
 
   let patch: StorePatch;
@@ -923,7 +924,8 @@ export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
   // @endif
   // @ifdef DEBUG
   dieIf(ps.replyToNr && isChat, 'TyE62SKHSW604');
-  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe && !isChat, 'TyE6QSADTH04');
+  dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe &&
+      !isChat && location.pathname.indexOf(ApiUrlPathPrefix) === -1, 'TyE6QSADTH04');
   // @endif
 
   let patch: StorePatch = {};
