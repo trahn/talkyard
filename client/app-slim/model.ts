@@ -212,7 +212,7 @@ interface ShowEditsPreviewParams extends EditorIframeHeight {
 }
 
 
-interface HideEditsorAndPreviewParams {
+interface HideEditorAndPreviewParams {
   anyDraft?: Draft;
   keepDraft?: boolean;
   keepPreview?: true;
@@ -850,8 +850,6 @@ interface Store extends Origins {
   numOnlineStrangers?: number;
   userIdsOnline?: { [userId: number]: boolean }; // this is a set; all values are true
 
-  replyPreviewsByPostId: { [postId: string]: EditPreview };
-
   // If quickUpdate is true only posts in postsToUpdate will be updated.
   quickUpdate: boolean;
   postsToUpdate: { [postId: number]: boolean };
@@ -1316,21 +1314,12 @@ interface StorePatch {
   tagsStuff?: TagsStuff;
 
   setEditorOpen?: boolean;
-  updateEditPreview?: EditPreview;
   deleteDraft?: Draft;
 
   // If doing something resulted in a new page being created, and we should continue on that page.
   // E.g. if posting the first reply, in an embedded comments discussion (then a page for the
   // discussion gets created, lazily).
   newlyCreatedPageId?: PageId;
-}
-
-
-interface EditPreview {
-  postId: PostId;
-  postType: PostType;
-  isReplying: true;  // for now
-  safeHtml?: string;
 }
 
 

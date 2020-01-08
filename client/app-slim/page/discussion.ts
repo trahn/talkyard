@@ -572,7 +572,7 @@ const RootPostAndComments = createComponent({
       if (this.isGone) return;
 
       // Dupl code [5AKBR30W02]
-      const inclInReply = true; // old, legacy
+      const inclInReply = true; // legacy (was for multireplies: toggle incl-in-reply or not)
       if (eds.isInEmbeddedCommentsIframe) {
         window.parent.postMessage(
             JSON.stringify(['editorToggleReply', [BodyNr, inclInReply]]), eds.embeddingOrigin);
@@ -622,6 +622,7 @@ const RootPostAndComments = createComponent({
         r.div({ className: 's_Pg_DdInf' },
           pageRole === PageRole.EmbeddedComments ? t.d.DiscDeld : t.d.PageDeld);
 
+    // Test this at Ty.io, homepage?
     const previewInfo = !rootPost.isEditing ? null :
         r.div({ className: 's_T_YourPrvw' },
           t.e.PreviewC + ' ',
@@ -1081,7 +1082,6 @@ const Thread = createComponent({
 
   render: function() {
     const store: Store = this.props.store;
-    const me: Myself = store.me;
     const page: Page = store.currentPage;
     const postsByNr: { [postNr: number]: Post; } = page.postsByNr;
     const post: Post = postsByNr[this.props.postId];
@@ -1089,13 +1089,6 @@ const Thread = createComponent({
       // This tree has been deleted.
       return null;
     }
-
-    const anyReplyPreview = null; /*store.replyPreviewsByPostId[post.uniqueId];
-    const replyPrevwElem = !anyReplyPreview ? null :
-        r.li({ className: 's_R_Pv', key: 'Prevw' },
-          anyReplyPreview.safeHtml
-              ? JSON.stringify(anyReplyPreview.safeHtml)
-              : "(Your reply will appear here)"); */
 
     const parentPost = postsByNr[post.parentNr];
     const deeper = this.props.depth + 1;
@@ -1225,7 +1218,7 @@ const Thread = createComponent({
     let previewElem = null;
     if (post.isPreview) {
       // For now,
-      // construct either this text:  "Preview: Your reply to [link to parent post]:"
+      // construct either this text:  "Preview: Your reply to (someone's name):"
       // or this:   "Your draft, replies to [link to parent post]:".
 
       const isProgrPost = post.parentNr === BodyNr && post.postType === PostType.BottomComment;
@@ -1258,7 +1251,7 @@ const Thread = createComponent({
       else {
         const repliesToBlogPost =
             parentPost.nr === BodyNr && page.pageRole === PageRole.EmbeddedComments;
-        const replTo = !isProgrPost && !repliesToBlogPost &&
+        const replTo: false | Participant = !isProgrPost && !repliesToBlogPost &&
             store.usersByIdBrief[parentPost.authorId];
         const yourReplyTo_or_repliesTo = post.isEditing
             ? (isProgrPost
@@ -1651,6 +1644,7 @@ export const PostHeader = createComponent({
 
     // If we start composing a reply, before having logged in, then, `author` will
     // be missing.
+/// CONTINUE HERE CR
     const skipName = author.isMissing;  // Maybe show "you" as placeholder name? YES, done, remove this line?
     // @ifdef DEBUG
     dieIf(skipName && !post.isPreview && !post.isForDraftNr,

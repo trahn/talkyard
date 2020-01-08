@@ -352,7 +352,6 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
   getInitialState: function(): ChatMessageEditorState {
     return {
       text: '',
-      draft: undefined,
       draftStatus: DraftStatus.NotLoaded,
       rows: DefaultEditorRows,
       previewYPos: 0,
@@ -517,6 +516,7 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
     const textChanged = state.text !== text;
     const textNowEmpty = !text;
 
+    // COULD use store.isEditorOpen instead — but I think it hasn't been updated yet?
     if (textChanged && !this.state.advancedEditorInstead) {
       if (textNowEmpty) {
         ReactActions.hideEditorAndPreview({});
@@ -579,7 +579,7 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
     // Let Return mean newline everywhere, and ctrl+return means Submit everywhere.
     // (Typically, in a chat, Return/Enter means "post my message". However, in Talkyard's
     // "advanced" editor, hitting Return adds a newline — so people (well at least
-    // my (KajMagnus) father) get confused if Return instead submits one's chat message.)
+    // my (KajMagnus') father) get confused if Return instead submits one's chat message.)
 
     // In my Chrome, Ctrl + Enter won't fire onKeyPress, only onKeyDown. [5KU8W2]
     if (event_isCtrlEnter(event)) {

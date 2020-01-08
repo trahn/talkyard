@@ -1290,23 +1290,6 @@ function patchTheStore(storePatch: StorePatch) {
     store.me = <Myself> _.assign(store.me || {}, storePatch.me);
   }
 
-  if (storePatch.updateEditPreview) {
-    const replyPreviews = store.replyPreviewsByPostId ?? {};
-    const p = storePatch.updateEditPreview;
-    replyPreviews[p.postId] = p;
-    // [redux] modifying the store in place, again.
-    store.replyPreviewsByPostId = replyPreviews;
-
-    // Quick-update this — otherwise, the UI might always freeze, if typing
-    // fast on a low-end mobile?
-    // Maybe cannot quick-update though, if there're more things in the patch.
-    // @ifdef DEBUG
-    dieIf(_.size(storePatch) > 1, 'TyED205MWUG6');
-    // @endif
-    store.quickUpdate = true;
-    store.postsToUpdate[p.postId] = true;
-  }
-
   if (storePatch.deleteDraft) {
     _.each(store.me.myDataByPageId, (myData: MyPageData) => {
       myData.myDrafts = _.filter(myData.myDrafts, (draft: Draft) => {

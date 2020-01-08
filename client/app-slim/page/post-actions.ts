@@ -188,9 +188,8 @@ export const PostActions = createComponent({
     login.loginIfNeededReturnToPost(loginToWhat, post.nr, () => {
       if (this.isGone) return;
 
-      const inclInReply = true; // old, legacy
-
       // Dupl code [5AKBR30W02]
+      const inclInReply = true; // legacy (was for multireplies: toggle incl-in-reply or not)
       if (eds.isInEmbeddedCommentsIframe) {
         window.parent.postMessage(
             JSON.stringify(['editorToggleReply', [post.nr, inclInReply]]), eds.embeddingOrigin);

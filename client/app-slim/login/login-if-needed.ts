@@ -31,7 +31,10 @@ export let anyContinueAfterLoginCallback = null;
 
 
 export function loginIfNeededReturnToPost(
-      loginReason: LoginReason | string, postNr: PostNr, success: () => void, willCompose?: boolean) {
+      loginReason: LoginReason | string, postNr: PostNr, success: () => void,
+      willCompose?: boolean) {
+  // If posting a progress post, then, after login, scroll to the bottom, so one
+  // can click that button again — it's at the bottom.
   const anchor = loginReason === LoginReason.PostProgressNote
       ? FragActionHashScrollToBottom
       : (postNr < FirstReplyNr ? '' : (

@@ -213,6 +213,7 @@ object DraftType {
   case object Edit extends DraftType(4)
   case object Reply extends DraftType(5)
   case object ProgressPost extends DraftType(6)
+  // case object ChatMessage extends DraftType(?) — currently not needed, using Reply instead
   // case object Whisper extends DraftType(?)
 
   def fromInt(value: Int): Option[DraftType] = Some(value match {
@@ -221,6 +222,7 @@ object DraftType {
     case Edit.IntVal => Edit
     case Reply.IntVal => Reply
     case ProgressPost.IntVal => ProgressPost
+    // case ChatMessage.IntVal => ChatMessage
     // case Whisper.IntVal => Whisper
     case _ => return None
   })

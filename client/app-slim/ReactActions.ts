@@ -530,9 +530,8 @@ export function doUrlFragmentAction(newHashFragment?: string) {
         }
         else {
           // Normal = incl in draft + url?
-          Server.loadEditorAndMoreBundles(function() {
-            debiki2.editor.toggleWriteReplyToPostNr(postNr, true, PostType.Normal);
-          });
+          // UNTESTED just removed Server.loadEditorAndMoreBundles, done by toggle...:
+          debiki2.editor.toggleWriteReplyToPostNr(postNr, true, PostType.Normal);
         }
         break;
       case FragActionType.EditPost:
@@ -905,7 +904,7 @@ export function scrollToPreview(ps: {
 }
 
 
-export function hideEditorAndPreview(ps: HideEditsorAndPreviewParams) {
+export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
   // @ifdef DEBUG
   dieIf(ps.replyToNr && ps.editingPostNr, 'TyE4KTJW035M');
   dieIf(ps.replyToNr && !ps.anyPostType, 'TyE72SKJRW46');

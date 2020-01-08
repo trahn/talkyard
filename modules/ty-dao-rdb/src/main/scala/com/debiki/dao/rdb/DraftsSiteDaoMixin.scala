@@ -137,7 +137,7 @@ trait DraftsSiteDaoMixin extends SiteTransaction {
 
 
   override def loadDraftsByUserOnPage(userId: UserId, pageId: PageId): immutable.Seq[Draft] = {
-    UNTESTED
+    TESTS_MISSING
     val query = s"""
       select d.* from drafts3 d inner join posts3 p
         on d.site_id = p.site_id

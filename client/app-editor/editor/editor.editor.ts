@@ -75,7 +75,7 @@ interface EditorState {
   editorsCategories?: Category[];
   editorsPageId?: PageId;
   editingPostNr?: PostNr;
-  editingPostUid?: PostId;
+  editingPostUid?: PostId;  // CLEAN_UP RENAME to ...PostId not ...Uid
   isWritingChatMessage?: boolean;
   messageToUserIds: UserId[],
   newForumTopicCategoryId?: CategoryId;
@@ -117,17 +117,10 @@ export const Editor = createFactory<any, EditorState>({
       visible: false,
       text: '',
       title: '',
-      draft: null,
       draftStatus: DraftStatus.NotLoaded,
       safePreviewHtml: '',
-      anyPostType: undefined,
       replyToPostNrs: [],
-      editingPostNr: null,
-      editingPostUid: null,  // CLEAN_UP RENAME to ...PostId not ...Uid
       messageToUserIds: [],
-      newForumTopicCategoryId: null,
-      newPageRole: null,
-      guidelines: null,
       backdropOpacity: 0,
       isUploadingFile: false,
       fileUploadProgress: 0,
@@ -396,8 +389,13 @@ export const Editor = createFactory<any, EditorState>({
       // This means we've started replying to a post, and then clicked Reply
       // for *another* post too — i.e. we're trying to reply to more than one post,
       // a a single time. This is, in Talkyard, called Multireply.
-      // Disable this for now — it's disabled server side, and the UX was always
-      // rather poor actually. UX COULD disable the reply buttons? Also see (5445522) just below.
+      // Disable this for now — it's disabled server side, and the UX for this was
+      // poor actually.
+      // Disable the reply buttons? Also see (5445522) just below. — Done,
+      // see store.isEditorOpen.
+      // @ifdef DEBUG
+      die('TyE305FKUGPGJ0');
+      // @endif
       return;
     }
 
@@ -407,7 +405,10 @@ export const Editor = createFactory<any, EditorState>({
     if (this.state.editorsPageId !== store.currentPageId && postNrs.length) {
       // The post nrs on this different page, won't match the ones in postNrs.
       // So ignore this.
-      // UX COULD disable the reply buttons? Also see (5445522) just above.
+      // UX COULD disable the reply buttons? Also see (5445522) just above.  — Done.
+      // @ifdef DEBUG
+      die('TyE630KRGUJMF');
+      // @endif
       return;
     }
 
@@ -596,7 +597,7 @@ export const Editor = createFactory<any, EditorState>({
       draftType: DraftType.DirectMessage,
       toUserId: userId,
     };
-    this.loadDraftAndGuidelines(draftLocator, WritingWhat.NewPage, PageRole.FormalMessage);   // hmmprvw
+    this.loadDraftAndGuidelines(draftLocator, WritingWhat.NewPage, PageRole.FormalMessage);
     this.showAndFadeOutBackdrop();
   },
 
@@ -615,8 +616,8 @@ export const Editor = createFactory<any, EditorState>({
     setTimeout(fadeBackdrop, 1400);
   },
 
-  scrollPostIntoView: function(postNr) {   // hmmprvw
-    // send message to iframe parent?
+  scrollPostIntoView: function(postNr) {
+    // SHOULD send message to iframe parent, so works also for embedded comments.
 
     const postElem = $byId('post-' + postNr);
     // There's no pots-1 = BodyNr in embedded comments discussions (there's a blog
@@ -674,16 +675,25 @@ export const Editor = createFactory<any, EditorState>({
   loadDraftAndGuidelines: function(draftLocator: DraftLocator, writingWhat: WritingWhat,
         pageRole?: PageRole) {
 
-    if (isEmbeddedNotYetCreatedPage(this.state)) {
-      // Cannot currently load draft & guidelines (below) for a not-yet-created page.
-      // Instead: [BLGCMNT1]
-      const draft = getFromSessionStorage(draftLocator);
-      this.setState({   // dupl code (2ABR703)
+    const setDraftAndGuidelines = (anyDraft?, anyGuidelines?) => {
+      const draft = anyDraft || getFromSessionStorage(draftLocator);
+      const newState: Partial<EditorState> = {
         draft,
         draftStatus: DraftStatus.NothingHappened,
         text: draft ? draft.text : '',
         title: draft ? draft.title : '',
-      });    // hmmprvw
+        guidelines: anyGuidelines,
+      };
+      this.setState(newState, () => {
+        this.focusInputFields();
+        this.updatePreviewSoon();
+      });
+    };
+
+    if (isEmbeddedNotYetCreatedPage(this.state)) {
+      // Cannot currently load draft & guidelines (below) for a not-yet-created page.
+      // Instead, we'll load from the browser. [BLGCMNT1]
+      setDraftAndGuidelines();
       return;
     }
 
@@ -720,15 +730,7 @@ export const Editor = createFactory<any, EditorState>({
           hidden: isHidden,
         };
       }
-      draft = draft || getFromSessionStorage(draftLocator);
-      this.setState({   // dupl code (2ABR703)
-        draft,
-        draftStatus: DraftStatus.NothingHappened,
-        text: draft ? draft.text : '',
-        title: draft ? draft.title : '',
-        guidelines,
-      },
-        this.focusInputFields);   // hmmprvw
+      setDraftAndGuidelines(draft, guidelines);
     });
   },
 
@@ -1060,11 +1062,11 @@ export const Editor = createFactory<any, EditorState>({
         });
         this.isSavingDraft = true;
         Server.deleteDrafts([oldDraft.draftNr], useBeacon || (() => {
-          // Could patch the store: delete the draft — so won't reappear
-          // if [offline-first] and navigates back to this page.
-
           this.isSavingDraft = false;
           console.debug("...Deleted draft.");
+
+          // Could patch the store: delete the draft — so won't reappear
+          // if [offline-first] and navigates back to this page.
 
           if (this.isGone || !this.state.visible)
             return;
@@ -1076,7 +1078,7 @@ export const Editor = createFactory<any, EditorState>({
         }), useBeacon || this.setCannotSaveDraft);
       }
       if (callbackThatClosesEditor) {
-        callbackThatClosesEditor();  // how make this delete the draft?
+        callbackThatClosesEditor();
       }
       return;
     }
@@ -1176,7 +1178,6 @@ export const Editor = createFactory<any, EditorState>({
 
   saveEdits: function() {
     this.throwIfBadTitleOrText(null, t.e.PleaseDontDeleteAll);
-    delete this.origPostBeforeEdits;
     Server.saveEdits(this.state.editingPostNr, this.state.text, this.anyDraftNr(), () => {
       this.callOnDoneCallback(true);
       this.clearAndClose();
@@ -1291,7 +1292,7 @@ export const Editor = createFactory<any, EditorState>({
     // @endif
     this.makeSpaceAtBottomForEditor();
     const newState: Partial<EditorState> = { ...statePatch, visible: true };
-    this.setState(newState); //, onDone);
+    this.setState(newState);
     ReactActions.onEditorOpen(() => {
       if (this.isGone || !this.state.visible) return;
       this.focusInputFields();
@@ -1312,7 +1313,7 @@ export const Editor = createFactory<any, EditorState>({
       removeFromSessionStorage(anyDraft.forWhat);
     }
 
-    const params: HideEditsorAndPreviewParams = {
+    const params: HideEditorAndPreviewParams = {
       anyDraft,
       keepDraft: ps.keepDraft,
       editorsPageId: state.editorsPageId,
