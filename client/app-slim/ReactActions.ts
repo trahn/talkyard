@@ -879,7 +879,10 @@ export function scrollToPreview(ps: {
   const selector = ps.isEditingBody ? '.dw-ar-t > .s_T_YourPrvw' : (
     ps.isChat ? '.s_T_YourPrvw + .esC_M' : '.s_T-Prvw-IsEd');
 
-  const marginTop = ps.isEditingBody ? 110 : 50;
+  // If editing body, use some more margin, so the page title and "By (author)"
+  // stays visible — and, in a chat, so that the "Preview:" text is visible
+  // (it's not included in `selector`).
+  const marginTop = ps.isEditingBody || ps.isChat ? 110 : 50;
 
   // If we're in an embedded comments iframe, then, there's another iframe for the
   // editor. Then scroll a bit more, so that other iframe won't occlude the preview.

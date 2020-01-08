@@ -360,7 +360,8 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
   },
 
   componentDidMount: function() {
-    this.saveDraftDebounced = _.debounce(this.saveDraftNow, 2022);
+    this.updatePreviewSoon = _.debounce(this.updatePreviewNow, 333);
+    this.saveDraftSoon = _.debounce(this.saveDraftNow, 2022);
     window.addEventListener('unload', this.saveDraftUseBeacon);
 
     // Load editor scripts — but why??? skip? (WAITWJS) and any draft text.
@@ -517,36 +518,11 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
     const textNowEmpty = !text;
 
     if (textChanged && !this.state.advancedEditorInstead) {
-      const params: ShowEditsPreviewParams | HideEditsorAndPreviewParams = {
-        editorsPageId: store.currentPageId,
-        anyPostType: PostType.ChatMessage,
-      };
       if (textNowEmpty) {
-        ReactActions.hideEditorAndPreview(params);
+        ReactActions.hideEditorAndPreview({});
       }
       else {
-        Server.loadEditorAndMoreBundles(() => {  // needn't do until here? (WAITWJS)
-          if (this.isGone) return;
-          // Break out fn, and DEBOUNCE this?
-          const sanitizerOpts = {
-            allowClassAndIdAttr: true, // or only if isEditingBody?  dupl [304KPGSD25]
-            allowDataAttr: false
-          };
-          const safeHtml = debiki2['editor'].markdownToSafeHtml(
-              this.state.text, window.location.host, sanitizerOpts);
-
-          // If one has scrolled up manually, so much so the preview is now below
-          // the editor, then stop scrolling the preview into view — because
-          // apparently the user wants to control the scroll henself.
-          const previewElm = $first('.s_T_YourPrvw');
-          const previewElmY = previewElm?.getBoundingClientRect()?.y || 0;
-          const editorElm = $first('.esC_Edtr');
-          const editorElmY = editorElm?.getBoundingClientRect()?.y || 0;
-          const scrollToPreview = previewElmY <= editorElmY;
-
-          ReactActions.showEditsPreview({
-              ...params, scrollToPreview, safeHtml });
-        });
+        this.updatePreviewSoon();
       }
     }
 
@@ -559,7 +535,7 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
 
     this.setState(
         newState,
-        draftStatus === DraftStatus.ShouldSave ? this.saveDraftDebounced : undefined);
+        draftStatus === DraftStatus.ShouldSave ? this.saveDraftSoon : undefined);
 
     // In case lines were deleted, we need to move the editor a bit downwards, so it
     // remains fixed at the bottom — because now it's smaller.
@@ -571,6 +547,32 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
         this.props.refreshFixedAtBottom();
       }, 0);
     }
+  },
+
+  updatePreviewNow: function() {
+    Server.loadEditorAndMoreBundles(() => {  // needn't do until here? (WAITWJS)
+      if (this.isGone) return;
+
+      const sanitizerOpts = {
+        allowClassAndIdAttr: true, // or only if isEditingBody?  dupl [304KPGSD25]
+        allowDataAttr: false
+      };
+
+      const safeHtml = debiki2['editor'].markdownToSafeHtml(
+          this.state.text, window.location.host, sanitizerOpts);
+
+      // If one has scrolled up manually, so much so the preview is now below
+      // the editor, then stop scrolling the preview into view — because
+      // apparently the user wants to control the scroll henself.
+      const previewElm = $first('.s_T_YourPrvw');
+      const previewElmY = previewElm?.getBoundingClientRect()?.y || 0;
+      // The simple chat message text box, or the advanced editor.
+      const editorElm = $first('.esC_Edtr, .s_E-E');
+      const editorElmY = editorElm?.getBoundingClientRect()?.y || 0;
+      const scrollToPreview = previewElmY <= editorElmY;
+
+      ReactActions.showEditsPreview({ scrollToPreview, safeHtml });
+    });
   },
 
   onKeyPressOrKeyDown: function(event) {
