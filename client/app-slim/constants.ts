@@ -64,6 +64,7 @@ const MaxUsernameLength = 20;            // in scala [6AKBR20Q]
 
 const MaxGuestId = -2;
 const UnknownUserId = -3;
+//const CurrentUserNotLoggedInId = -1?  or  -4;  ?
 
 const ReviewDecisionUndoTimoutSeconds = 12; // sync with Scala and test code [2PUKQB0]
 

@@ -78,6 +78,7 @@ export const NoCommentsPageActions = createComponent({
       return null;
 
     // Dupl code [305RKTDJ2]
+    // UNTESTED this only, not at the other place.
     const myPageData: MyPageData = me.myCurrentPageData;
     const anyEditsDraft = _.find(myPageData.myDrafts, (d: Draft) => {
       return d.forWhat.postId === post.uniqueId && 
@@ -251,9 +252,12 @@ export const PostActions = createComponent({
 
     if (post.nr < MinRealPostNr) {
       // This is a preview of a new reply; it doesn't yet exist for real, there's nothing
-      // we can do with it.
+      // we can do with it.  (Later: What if one wants to e.g. schedule the post to get
+      // posted a bit later, then maybe there could be a button for that, here?
+      // Or change background color, or whatever — maybe some action buttons can
+      // make sense, also for a preview post?)
       // @ifdef DEBUG
-      dieIf(!post.isPreview, 'TyE396KRTTF2J');
+      dieIf(!post.isPreview, 'TyE603WKGU42R');
       // @endif
       return null;
     }
@@ -268,6 +272,7 @@ export const PostActions = createComponent({
     let acceptAnswerButton;
     if (deletedOrCollapsed) {
       // Show no accept-as-answer button.
+      // (But if is edits preview? Then it's ok click Accept, whilst editing.)
     }
     else if (isStaffOrOwnPage && isQuestion && !page.pageAnsweredAtMs && !page.pageClosedAtMs &&
         !isPageBody && post.isApproved) {
@@ -286,8 +291,6 @@ export const PostActions = createComponent({
         t.Solution);
     }
 
-    // (Previously, added a class .dw-replying [395QKTJR03] to the Reply button one
-    // had clicked — but now, with reply previews, no longer needed?)
     const replyButton = !store_mayIReply(store, post) || isEditorOpenAlready ? null :
           r.a({ className: 'dw-a dw-a-reply ' + makeReplyBtnIcon(store),
               onClick: this.onReplyClick },
@@ -382,7 +385,10 @@ export const PostActions = createComponent({
     let moreDropdown;
     if (isEditingThisPost) {
       // Skip the Flag and More buttons — doing such things when the post is being
-      // edited, could have weird effects?
+      // edited, could have weird effects?  E.g. More + Delete, or + Move-to-other-page,
+      // whilst editing.
+      // But what if one clicks Delete on the parent post, and deletes the whole tree?
+      // Maybe hide the More buttons for *all* posts?
     }
     else if (me.isLoggedIn) {
       moreDropdown =

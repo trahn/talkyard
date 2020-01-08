@@ -1642,17 +1642,8 @@ export const PostHeader = createComponent({
 
     const isPageBody = post.nr === BodyNr;
 
-    // If we start composing a reply, before having logged in, then, `author` will
-    // be missing.
-/// CONTINUE HERE CR
-    const skipName = author.isMissing;  // Maybe show "you" as placeholder name? YES, done, remove this line?
-    // @ifdef DEBUG
-    dieIf(skipName && !post.isPreview && !post.isForDraftNr,
-        `Author missing, but not preview: ${JSON.stringify(post)} [TyE306RKD2RF]`);
-    // @endif
-
-    const by = isPageBody && !skipName ? t.d.By : '';
-    const userName = skipName ? null :
+    const by = isPageBody ? t.d.By : '';
+    const userName =
         UserName({ user: author, store, makeLink: !abbreviate,
             onClick: abbreviate ? undefined : this.onUserClick });
 

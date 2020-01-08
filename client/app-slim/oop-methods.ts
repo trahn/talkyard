@@ -706,12 +706,14 @@ export function store_findCatsWhereIMayCreateTopics(store: Store): Category[] {
 export function store_makeDraftPostPatch(store: Store, page: Page, draft: Draft)
       : StorePatch {
   const draftPost = store_makePostForDraft(store, draft)
+  // ----- dupl code [305KTUMBRVF2]
   const patch: StorePatch = {
     pageVersionsByPageId: {},
     postsByPageId: {},
   };
   patch.postsByPageId[page.pageId] = [draftPost];
   patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
+  // ----/ dupl code
   return patch;
 }
 
@@ -737,7 +739,6 @@ export function store_makeEditsPreviewPatch(
     ...post,
     sanitizedHtml: safePreviewHtml,
     isPreview: true,
-    //isForDraftNr: ?
     isEditing: true,
   };
   const patch: StorePatch = {
@@ -753,7 +754,7 @@ export function store_makeEditsPreviewPatch(
 // Break out fn — done. [0345JKATSJ]
 export function draftType_toPostType(draftType: DraftType): PostType | undefined {
   switch (draftType) {
-    case DraftType.Reply: return PostType.Normal;
+    case DraftType.Reply: return PostType.Normal;  // could also be ChatMessage
     case DraftType.ProgressPost: return PostType.BottomComment;
     default:
       return undefined;
@@ -764,6 +765,7 @@ export function draftType_toPostType(draftType: DraftType): PostType | undefined
 export function postType_toDraftType(postType: PostType): DraftType | undefined {
   switch (postType) {
     case PostType.Normal: return DraftType.Reply;
+    case PostType.ChatMessage: return DraftType.Reply;
     case PostType.BottomComment: return DraftType.ProgressPost;
     default:
       return undefined;

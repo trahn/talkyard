@@ -63,7 +63,8 @@ export function highlightPostNrBrieflyIfThere(nr: PostNr) {
   if (!elem)
     return;
   if ($h.hasClass(elem, 's_P-Prvw-NotEd')) {
-    // It's a draft preview, not a real post. Find and highlight the draft title text too.
+    // It's a draft preview, not a real post. Also find and highlight the draft
+    // header, e.g. "Preview, your edits:".
     const draftHeader = $first('.s_T_YourPrvw', elem.parentElement);
     highlightBrieflyImpl(draftHeader, elem);
   }

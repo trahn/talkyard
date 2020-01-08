@@ -87,7 +87,7 @@ export function loadMyself(afterwardsCallback?) {
       const mainWin = getMainWin();
       const typs: PageSession = mainWin.typs;
       const weakSessionId = typs.weakSessionId;
-      sendToCommentsIframe([
+      sendToOtherIframe([
         'justLoggedIn', { user, weakSessionId, pubSiteId: eds.pubSiteId }]);  // [JLGDIN]
     }
     setNewMe(user);
@@ -128,7 +128,7 @@ export function logoutClientSideOnly() {
     sendToEditorIframe(['logoutClientSideOnly', null]);
 
     // Probaby not needed, since reload() below, but anyway:
-    ReactActions.patchTheStore({ setEditorOpen: false });
+    patchTheStore({ setEditorOpen: false });
   }
 
   // Abort any long polling request, so we won't receive data, for this user, after we've
@@ -783,8 +783,9 @@ export function onEditorOpen(onDone: () => void) {
     sendToCommentsIframe(['showEditor', {}]);
   }
 
-  ReactActions.patchTheStore({ setEditorOpen: true }, onDone);
+  patchTheStore({ setEditorOpen: true }, onDone);
 }
+
 
 
 let origPostBeforeEdits: Post | undefined;
@@ -807,6 +808,8 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
 
   // @ifdef DEBUG
   dieIf(!page, 'TyE3930KRG');
+  // This'd be weird? Showing a preveiw on this page, for a post on *another* page?
+  dieIf(ps.editorsPageId && ps.editorsPageId !== store.currentPageId, 'TyE04DKSUGK4');
   // @endif
 
   if (!page)
@@ -818,8 +821,11 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   // @ifdef DEBUG
   // Chat messages don't reply to any particular post — has no parent nr. [CHATPRNT]
   dieIf(ps.replyToNr && isChat, 'TyE7WKJTGJ024');
-  // The embedded comments editor doesn't include any page id when sending the
-  // showEditsPreview message — it doesn't know which page we're looking at.
+  // If no page id included, then either 1) we're in the embedded comments editor
+  // — doesn't include any page id when sending the showEditsPreview message to the
+  // main iframe; it doesn't know which page we're looking at. Or 2) we're in
+  // a chat — then, currently no page id included. Or 3) if we're in the api
+  // section, then there's no page.
   dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe &&
       !isChat && location.pathname.indexOf(ApiUrlPathPrefix) === -1, 'TyE630KPR5');
   // @endif
@@ -832,7 +838,7 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
     if (!origPostBeforeEdits) {
       origPostBeforeEdits = postToEdit;
     }
-    patch = store_makeEditsPreviewPatch(store, page, postToEdit, ps.safeHtml);
+    patch = store_makeEditsPreviewPatch(store, page, origPostBeforeEdits, ps.safeHtml);
   }
   else if (ps.replyToNr || isChat) {
     const postType = ps.anyPostType || PostType.ChatMessage;
@@ -846,7 +852,10 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   // @endif
 
   if (patch) {
-    ReactActions.patchTheStore(patch, () => {
+    patchTheStore(patch, () => {
+      // The preview won't appear until a bit later, after the preview post
+      // store patch has been applied — currently the wait-a-bit code is
+      // a tiny bit hacky: [SCROLLPRVW].
       if (ps.scrollToPreview) {
         scrollToPreview({
           isChat,
@@ -869,9 +878,6 @@ export function scrollToPreview(ps: {
     sendToCommentsIframe(['scrollToPreview', { ...ps, editorIframeHeightPx }]);
     return;
   }
-
-  // The preview won't appear until a bit later, after the preview post
-  // store patch has been applied. But how know when that has happened? [SCROLLPRVW]
 
   // Break out function? Also see FragActionHashScrollToBottom, tiny bit dupl code.
   // Scroll to the preview we're currently editing (not to any inactive draft previews).
@@ -912,7 +918,7 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
 
   if (eds.isInEmbeddedEditor) {
     sendToCommentsIframe(['hideEditorAndPreview', ps]);
-    ReactActions.patchTheStore({ setEditorOpen: false });
+    patchTheStore({ setEditorOpen: false });
     return;
   }
 
@@ -923,8 +929,7 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
   // A bit dupl debug checks (49307558).
   // @ifdef DEBUG
   dieIf(!page, 'TyE407AKSHPW24');
-  // @endif
-  // @ifdef DEBUG
+  dieIf(ps.editorsPageId && ps.editorsPageId !== store.currentPageId, 'TyE603KUDRP2');
   dieIf(ps.replyToNr && isChat, 'TyE62SKHSW604');
   dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe &&
       !isChat && location.pathname.indexOf(ApiUrlPathPrefix) === -1, 'TyE6QSADTH04');
@@ -934,18 +939,22 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
   let highlightPostNrAfter: PostNr;
 
   if (ps.keepPreview) {
-    // Thsi happens if we're editing a chat message — then we can continue typing
-    // in the cat message text box.
+    // Thsi happens if we're editing a chat message in the advanced editor — we can
+    // continue typing in the cat message text box, and keep the preview.
   }
   else if (ps.editingPostNr) {
+    // Put back the original post, the one before the edits. If saving, then,
+    // once the serve has replied, we'll insert the new updated post instead.  Or...? [359264FKUGP]
     if (origPostBeforeEdits) {
       highlightPostNrAfter = origPostBeforeEdits.nr;
+      // ----- dupl code [305KTUMBRVF2]
       patch = {
         pageVersionsByPageId: {},
         postsByPageId: {},
       };
       patch.postsByPageId[page.pageId] = [origPostBeforeEdits];
       patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
+      // ----/ dupl code
       origPostBeforeEdits = null;
     }
   }
@@ -958,7 +967,7 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
   }
 
   patch = { ...patch, setEditorOpen: false };
-  ReactActions.patchTheStore(patch);
+  patchTheStore(patch);
 
   // And then, later:
   setTimeout(() => {
@@ -997,7 +1006,7 @@ export function handleReplyResult(patch: StorePatch, draftToDelete: Draft | unde
     return;
   }
 
-  debiki2.ReactActions.patchTheStore({ ...patch, deleteDraft: draftToDelete }, onDone);
+  patchTheStore({ ...patch, deleteDraft: draftToDelete }, onDone);
 }
 
 
@@ -1182,7 +1191,8 @@ function sendToEditorIframe(message) {
 }
 
 // An alias, for better readability.
-var sendToCommentsIframe = sendToEditorIframe;
+const sendToCommentsIframe = sendToEditorIframe;
+const sendToOtherIframe = sendToEditorIframe;
 
 
 //------------------------------------------------------------------------------
