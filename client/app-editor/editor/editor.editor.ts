@@ -1419,26 +1419,13 @@ export const Editor = createFactory<any, EditorState>({
     const state: EditorState = this.state;
     const store: Store = state.store;
 
-    // BUG? should use editorsRealPage instead? Don't change this now — too untested.
-    const page: Page = store.currentPage;
-    const anyEditorsRealPage = store.pagesById[state.editorsPageId];
-    const editorsRealPage = anyEditorsRealPage || store.currentPage;
+    // Is undef, if in the API section, e.g. typing a direct message to a user.
+    const editorsPage: Page | undefined =
+        store.pagesById[state.editorsPageId] || store.currentPage;
 
     const me: Myself = store.me;
     let settings: SettingsVisibleClientSide = store.settings;
     const isPrivateGroup = page_isPrivateGroup(this.state.newPageRole);
-
-    // @ifdef DEBUG
-    // This'd mean we've opened the editor, but then navigated to a different page —
-    // and lots of code below, thinks that this new page, is the one we're editing
-    // things on? Could be some bug here. Let's get notified about that,
-    // in dev mode:
-    dieIf(state.editorsPageId && page.pageId !== state.editorsPageId,
-        `Nav to new page? state.editorsPageId: '${state.editorsPageId}', ` +
-        `but store.currentPage.id: '${page.pageId}' [TyE02WUGPJ5]`);
-    dieIf(state.editorsPageId && !anyEditorsRealPage,
-        `No anyEditorsRealPage? editorsPageId: ${state.editorsPageId} [TyE6SKUTPG4]`);
-    // @endif
 
     // We'll disable the editor, until any draft has been loaded. [5AKBW20] Otherwise one might
     // start typing, and then the draft gets loaded (which might take some seconds if
@@ -1548,7 +1535,7 @@ export const Editor = createFactory<any, EditorState>({
     const repliesToNotOrigPost = replyToPostNrs.length && !isOrigPostReply;
     // ----- Delete these?:
     const isChatComment = replyToPostNrs.length === 1 && replyToPostNrs[0] === NoPostId;
-    const isMindMapNode = replyToPostNrs.length === 1 && page.pageRole === PageRole.MindMap;
+    const isMindMapNode = replyToPostNrs.length === 1 && editorsPage.pageRole === PageRole.MindMap;
     // --------------------
 
     let doingWhatInfo: any;
@@ -1595,7 +1582,7 @@ export const Editor = createFactory<any, EditorState>({
     else if (isChatComment) {
       doingWhatInfo = "New chat comment:";
     }
-    else if (isOrigPostReply && page_isUsabilityTesting(page.pageRole)) { // [plugin]
+    else if (isOrigPostReply && page_isUsabilityTesting(editorsPage.pageRole)) { // [plugin]
       //doingWhatInfo = "Your usability testing video link + description:";
       doingWhatInfo = "Your feedback and answers to questions:";
     }
@@ -1610,7 +1597,7 @@ export const Editor = createFactory<any, EditorState>({
         r.span({},
           t.e.ReplyTo,
           _.filter(replyToPostNrs, (id) => id !== NoPostId).map((postNr, index) => {
-            const parentPost: Post | undefined = editorsRealPage?.postsByNr[postNr];
+            const parentPost: Post | undefined = editorsPage?.postsByNr[postNr];
             const parentAuthor: BriefUser | undefined =
                 parentPost && store_getAuthorOrMissing(store, parentPost);
             // If replying to a blog post, then, it got auto created by the System
@@ -1659,7 +1646,7 @@ export const Editor = createFactory<any, EditorState>({
       }
       else {
         saveButtonTitle = t.e.PostReply;
-        if (isOrigPostReply && page_isUsabilityTesting(page.pageRole)) { // [plugin]
+        if (isOrigPostReply && page_isUsabilityTesting(editorsPage.pageRole)) { // [plugin]
           //saveButtonTitle = makeSaveTitle("Submit", " video");
           saveButtonTitle = makeSaveTitle("Submit", " feedback");
         }
