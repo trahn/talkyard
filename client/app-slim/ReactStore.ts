@@ -115,7 +115,6 @@ export function makeNoPageData(): MyPageData {
   return {
     dbgSrc: 'MyNP',
     pageId: EmptyPageId,
-// Continue CR here ...:
     myDrafts: <Draft[]> [],
     myPageNotfPref: <PageNotfPref> undefined,
     groupsPageNotfPrefs: <PageNotfPref[]> [],
@@ -533,7 +532,6 @@ ReactStore.activateMyself = function(anyNewMe: Myself) {
         if (post) {
           updatePost(post, store.currentPageId);
         }
-        // COULD_FREE_MEM
       }
     });
   }
@@ -1127,10 +1125,10 @@ function sortPostNrsInPlaceBestFirst(postNrs: PostNr[], postsByNr: { [nr: number
         return postApprovedOrCreatedBefore(postA, postB)
     }
 
-    // Place preview posts first, directly below the post it replies to — this makes
-    // it simpler to see what one replies to? Even though maybe the post won't 
-    // appear at that exact place (maybe there's another post with many like votes,
-    // which would then be placed above).
+    // Show any preview post first, directly below the post it replies to — so it's
+    // simpler to see what one is replying to. Even though the reply maybe won't
+    // appear at that exact location (maybe another reply with more like votes will
+    // appear first).
     if (onlyOneIsPreview)
       return postA.isPreview ? -1 : +1;
 
@@ -1271,6 +1269,8 @@ function updateNotificationCounts(notf: Notification, add: boolean) {
 function patchTheStore(storePatch: StorePatch) {
   if (isDefined2(storePatch.setEditorOpen) && storePatch.setEditorOpen !== store.isEditorOpen) {
     store.isEditorOpen = storePatch.setEditorOpen;
+    // Need to update all posts — hide their Reply buttons — when the editor opens,
+    // so cannot quick-update just one post.
     store.cannotQuickUpdate = true;
   }
 
@@ -1294,12 +1294,13 @@ function patchTheStore(storePatch: StorePatch) {
   if (storePatch.deleteDraft) {
     _.each(store.me.myDataByPageId, (myData: MyPageData) => {
       myData.myDrafts = _.filter(myData.myDrafts, (draft: Draft) => {
+        // 1) Compare by locator (i.e. forWhat), because:
         // Sometimes, the draftNr is 0 (or maybe in the future, different random negative
         // numbers), although it's the same draft — namely when one hasn't logged in
-        // yet and the server couldn't yet give the draft a draft nr.
-        // Maybe in other cases, the locators are slightly different somehow,
+        // yet and the server hasn't assigned any draft nr to the draft.
+        // 2) Compare by draftNr too, because:
+        // Maybe in some cases, the locators are slightly different somehow,
         // although it's the same draft — e.g. if an embedding page's url got changed?
-        // So compare by nr too.
         const sameLocator = _.isEqual(draft.forWhat, storePatch.deleteDraft.forWhat);
         const sameNr = !!draft.draftNr && draft.draftNr === storePatch.deleteDraft.draftNr;
         return !sameLocator && !sameNr;
@@ -1692,24 +1693,25 @@ function addLocalStorageDataTo(me: Myself) {
 
   // Any drafts in session storage? Wrap in try-catch in case browser privacy
   // settings forbids using sessionStorage.
-  if (!eds.isInEmbeddedEditor) try {
-    // TESTS_MISSING
-    Object.keys(sessionStorage).forEach(keyStr => {
-      if (keyStr.indexOf('embeddingUrl') >= 0) {
-        const locator: DraftLocator = JSON.parse(keyStr);
-        if (locator.embeddingUrl === eds.embeddingUrl) {
-          const draftStr = sessionStorage.getItem(keyStr);
-          const draft = JSON.parse(draftStr);
-          me.myCurrentPageData.myDrafts.push(draft);
+  if (!eds.isInEmbeddedEditor) {
+    try {
+      Object.keys(sessionStorage).forEach(keyStr => {
+        if (keyStr.indexOf('embeddingUrl') >= 0) {
+          const locator: DraftLocator = JSON.parse(keyStr);
+          if (locator.embeddingUrl === eds.embeddingUrl) {
+            const draftStr = sessionStorage.getItem(keyStr);
+            const draft = JSON.parse(draftStr);
+            me.myCurrentPageData.myDrafts.push(draft);
+          }
         }
-      }
-    });
-  }
-  catch (ex) {
-    // @ifdef DEBUG
-    console.debug(`Cannot access sessionStorage?`, ex)
-    // @endif
-    void 0; // [macro-bug], messes up file if 'endif' just before '}'
+      });
+    }
+    catch (ex) {
+      // @ifdef DEBUG
+      console.debug(`Cannot access sessionStorage?`, ex)
+      // @endif
+      void 0; // [macro-bug], messes up file if 'endif' just before '}'
+    }
   }
 
   if (!store.currentPageId)

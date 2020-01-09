@@ -703,18 +703,21 @@ export function store_findCatsWhereIMayCreateTopics(store: Store): Category[] {
 }
 
 
-export function store_makeDraftPostPatch(store: Store, page: Page, draft: Draft)
-      : StorePatch {
-  const draftPost = store_makePostForDraft(store, draft)
-  // ----- dupl code [305KTUMBRVF2]
+export function page_makePostPatch(page: Page, post: Post): StorePatch {
   const patch: StorePatch = {
     pageVersionsByPageId: {},
     postsByPageId: {},
   };
-  patch.postsByPageId[page.pageId] = [draftPost];
+  patch.postsByPageId[page.pageId] = [post];
   patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
-  // ----/ dupl code
   return patch;
+}
+
+
+export function store_makeDraftPostPatch(store: Store, page: Page, draft: Draft)
+      : StorePatch {
+  const draftPost = store_makePostForDraft(store, draft)
+  return page_makePostPatch(page, draftPost);
 }
 
 
@@ -723,35 +726,22 @@ export function store_makeNewPostPreviewPatch(store: Store, page: Page,
       newPostType?: PostType): StorePatch {
   const previewPost = store_makePreviewPost({
       store, parentPostNr, safePreviewHtml, newPostType, isEditing: true });
-  const patch: StorePatch = {
-    pageVersionsByPageId: {},
-    postsByPageId: {},
-  };
-  patch.postsByPageId[page.pageId] = [previewPost];
-  patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
-  return patch;
+  return page_makePostPatch(page, previewPost);
 }
 
 
-export function store_makeEditsPreviewPatch(
-      store: Store, page: Page, post: Post, safePreviewHtml: string): StorePatch {
-  const previewCopy: Post = {
+export function page_makeEditsPreviewPatch(
+      page: Page, post: Post, safePreviewHtml: string): StorePatch {
+  const previewPost: Post = {
     ...post,
     sanitizedHtml: safePreviewHtml,
     isPreview: true,
     isEditing: true,
   };
-  const patch: StorePatch = {
-    pageVersionsByPageId: {},
-    postsByPageId: {},
-  };
-  patch.postsByPageId[page.pageId] = [previewCopy];
-  patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
-  return patch;
+  return page_makePostPatch(page, previewPost);
 }
 
 
-// Break out fn — done. [0345JKATSJ]
 export function draftType_toPostType(draftType: DraftType): PostType | undefined {
   switch (draftType) {
     case DraftType.Reply: return PostType.Normal;  // could also be ChatMessage
@@ -793,20 +783,7 @@ export function store_makePostForDraft(store: Store, draft: Draft): Post | null 
 }
 
 
-interface MakePreviewParams {
-  store: Store;
-  parentPostNr?: PostNr;
-  safePreviewHtml?: string;
-  unsafeSource?: string;
-  newPostType?: PostType;
-  // Is true if the draft nr hasn't yet been decided (drafts in sessionStorage
-  // haven't yet been assigned a draft nr by the server).
-  isForDraftNr?: DraftNr | true;
-  isEditing?: boolean;
-}
-
-
-export function post_makePreviewIdNr(parentPostNr: PostNr, newPostType: PostType): PostNr & PostId {
+export function post_makePreviewIdNr(parentNr: PostNr, newPostType: PostType): PostNr & PostId {
   // So won't overlap with post nrs and ids.
   const previewOffset = -1000 * 1000;
   const previewPostIdNr =
@@ -816,18 +793,30 @@ export function post_makePreviewIdNr(parentPostNr: PostNr, newPostType: PostType
       // in the page.postsByNr map.
       // Chat messages have no parent post; there can be only one preview
       // chat message [CHATPRNT].
-      (parentPostNr || 0) * 100 -
-      // Different previews for progress orig-post reply, and discussion orig-post reply.
-      // If is editing, not replying, use 0.
+      (parentNr || 0) * 100 -
+      // We show different preview posts for 1) progress orig-post reply, and
+      // 2) discussion orig-post reply. — If is editing, not replying, use 0.
       (newPostType || 0);
   return previewPostIdNr;
 }
 
 
+interface MakePreviewParams {
+  store: Store;
+  parentPostNr?: PostNr;
+  safePreviewHtml?: string;
+  unsafeSource?: string;
+  newPostType: PostType;
+  // Is true if the draft nr hasn't yet been decided (drafts in sessionStorage
+  // haven't yet been assigned a draft nr by the server).
+  isForDraftNr?: DraftNr | true;
+  isEditing?: boolean;
+}
+
+
 function store_makePreviewPost({
     store, parentPostNr, safePreviewHtml, unsafeSource,
-    newPostType, isForDraftNr, isEditing }
-      : MakePreviewParams): Post {
+    newPostType, isForDraftNr, isEditing }: MakePreviewParams): Post {
 
   dieIf(!newPostType, "Don't use for edit previews [TyE4903KS]");
 
@@ -861,7 +850,6 @@ function store_makePreviewPost({
     //isBodyHidden?: boolean;
     isTreeDeleted: false,
     isPostDeleted: false,
-    //// === true means totally collapsed. === 'Truncated' means collapsed but parts of post shown.
     isTreeCollapsed: false,
     isPostCollapsed: false,
     isTreeClosed: false,
@@ -881,7 +869,7 @@ function store_makePreviewPost({
 }
 
 
-export function store_makeDeletePreviewPatch(store: Store, parentPostNr: PostNr,
+export function store_makeDeletePreviewPostPatch(store: Store, parentPostNr: PostNr,
       newPostType?: PostType): StorePatch {
   const previewPost: Post = store_makePreviewPost({
       store, parentPostNr, safePreviewHtml: '', newPostType });

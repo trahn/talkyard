@@ -82,8 +82,8 @@ const enum DraftStatus {  // sync with test code [5ABXG20]
 }
 
 
-// Create fn for converting from DraftType to PostType — done, [0345JKATSJ]
-const enum DraftType {   // check all swith-cases — adding ProgressPost
+// draftType_toPostType() can convert to PostType.
+const enum DraftType {
   Scratch = 1,
   Topic = 2,
   DirectMessage = 3,
@@ -93,6 +93,7 @@ const enum DraftType {   // check all swith-cases — adding ProgressPost
 }
 
 
+// postType_toDraftType() can convert to DraftType.
 const enum PostType {   // sync with test code [26BKA01]
   Normal = 1,         // RENAME to NormalPost
   Flat = 2,           // CLEAN_UP remove

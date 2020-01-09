@@ -330,8 +330,10 @@ export function deleteById(itemsWithId: any[], idToDelete) {
 
 
 export function arr_deleteInPlace<T>(ts: T[], toDelete: T) {  // RENAME arr_delInPl + arr_delCp
-  const ix = ts.indexOf(toDelete);
-  if (ix >= 0) {
+  while (true) {
+    const ix = ts.indexOf(toDelete);
+    if (ix === -1)
+      return;
     ts.splice(ix, 1);
   }
 }
@@ -342,7 +344,7 @@ export function arr_delete<T>(ts: T[], toDelete: T): T[] {
   if (ix === -1)
     return ts;
   const clone = ts.slice();
-  clone.splice(ix, 1);
+  clone.splice(ix, 1);  // but loop and delete all? clone 1st time only?
   return clone;
 } */
 

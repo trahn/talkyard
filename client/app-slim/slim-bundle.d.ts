@@ -197,7 +197,7 @@ declare namespace debiki2 {
 
     // from editor-bundle-not-yet-loaded.ts:
     function toggleWriteReplyToPostNr(postNr: PostNr, inclInReply: boolean, anyPostType?: number);
-    function openEditorToEditPostNr(postNr: PostNr, onDone?);
+    function openToEditPostNr(postNr: PostNr, onDone?);
     function editNewForumPage(categoryId: CategoryId, role: PageRole);
     function openToEditChatTitleAndPurpose();
     function openToWriteChatMessage(text: string, onDone);
@@ -293,6 +293,7 @@ declare namespace debiki2 {
   function store_ancestorsCategoriesCurrLast(store: Store, categoryId: CategoryId): Category[];
   function store_findCatsWhereIMayCreateTopics(store: Store): Category[];
 
+  function page_makePostPatch(page: Page, post: Post): StorePatch;
   function store_makeDraftPostPatch(store: Store, page: Page, draft: Draft): StorePatch;
 
   function post_makePreviewIdNr(parentPostNr: PostNr, newPostType: PostType): PostNr & PostId;
@@ -302,7 +303,7 @@ declare namespace debiki2 {
       newPostType?: PostType): StorePatch;
   function store_makeEditsPreviewPatch(
       store: Store, page: Page, post: Post, safePreviewHtml: string): StorePatch;
-  function store_makeDeletePreviewPatch(
+  function store_makeDeletePreviewPostPatch(
       store: Store, parentPostNr: PostNr, newPostType?: PostType): StorePatch;
 
   var hasErrorCode;

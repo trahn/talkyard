@@ -684,6 +684,12 @@ draft: [7WKABZP2]
           - forum-drafts-not-logged-in.2browsers.test.ts  TyT2ABSD73
           - embedded-comments-drafts-not-logged-in.test.ts  TyT2ZBKPW048
 
+  draft previews, resume and delete:  TESTS_MISSING
+    - chat:
+    - embeded comments:
+    - discussion topic:
+    - load from browser storage:
+
   # (reply, chat message, new topic, new(private/publ chat, edits, direct message.)
   # EditController.edit
   # GroupTalkController.sendMessage

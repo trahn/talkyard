@@ -30,21 +30,22 @@ function ensureEditorCreated(success: (editor: any) => void) {
 }
 
 
-export function toggleWriteReplyToPostNr(postNr: PostNr, inclInReply: boolean, anyPostType?: number) {
+export function toggleWriteReplyToPostNr(postNr: PostNr, inclInReply: boolean,
+      anyPostType?: PostType) {
   ensureEditorCreated(editor => {
     editor.toggleWriteReplyToPostNr(postNr, inclInReply, anyPostType);
   });
 }
 
 
-export function openEditorToEditPostNr(postId: number, onDone?: EditsDoneHandler) {
+export function openToEditPostNr(postNr: PostNr, onDone?: EditsDoneHandler) {
   ensureEditorCreated(editor => {
-    editor.editPost(postId, onDone);
+    editor.editPost(postNr, onDone);
   });
 }
 
 
-export function editNewForumPage(categoryId: number, role: PageRole) {
+export function editNewForumPage(categoryId: CategoryId, role: PageRole) {
   ensureEditorCreated(editor => {
     editor.editNewForumPage(categoryId, role);
   });

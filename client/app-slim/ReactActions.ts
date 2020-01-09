@@ -284,7 +284,7 @@ export function editPostWithNr(postNr: number) {
     }
     else {
       // Right now, we don't need to use the Store for this.
-      debiki2.editor.openEditorToEditPostNr(postNr);
+      editor.openToEditPostNr(postNr);
     }
   });
 }
@@ -295,7 +295,7 @@ export function handleEditResult(editedPost) {
     sendToCommentsIframe(['handleEditResult', editedPost]);
   }
   else {
-    debiki2.ReactActions.updatePost(editedPost);
+    updatePost(editedPost);
   }
 }
 
@@ -838,7 +838,7 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
     if (!origPostBeforeEdits) {
       origPostBeforeEdits = postToEdit;
     }
-    patch = store_makeEditsPreviewPatch(store, page, origPostBeforeEdits, ps.safeHtml);
+    patch = page_makeEditsPreviewPatch(page, origPostBeforeEdits, ps.safeHtml);
   }
   else if (ps.replyToNr || isChat) {
     const postType = ps.anyPostType || PostType.ChatMessage;
@@ -947,14 +947,7 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
     // once the serve has replied, we'll insert the new updated post instead.  Or...? [359264FKUGP]
     if (origPostBeforeEdits) {
       highlightPostNrAfter = origPostBeforeEdits.nr;
-      // ----- dupl code [305KTUMBRVF2]
-      patch = {
-        pageVersionsByPageId: {},
-        postsByPageId: {},
-      };
-      patch.postsByPageId[page.pageId] = [origPostBeforeEdits];
-      patch.pageVersionsByPageId[page.pageId] = page.pageVersion;
-      // ----/ dupl code
+      patch = page_makePostPatch(page, origPostBeforeEdits);
       origPostBeforeEdits = null;
     }
   }
@@ -962,7 +955,7 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
     const postType = ps.anyPostType || PostType.ChatMessage;
     patch = ps.anyDraft && ps.keepDraft
         ? store_makeDraftPostPatch(store, page, ps.anyDraft)
-        : store_makeDeletePreviewPatch(store, ps.replyToNr, postType);
+        : store_makeDeletePreviewPostPatch(store, ps.replyToNr, postType);
     highlightPostNrAfter = post_makePreviewIdNr(ps.replyToNr, postType);
   }
 

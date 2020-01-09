@@ -532,6 +532,8 @@ function onMessage(event) {
         sendToComments(event.data);
       }
       break;
+    // Maybe remove this one, and use only 'showEditsPreview' instead, renamed to
+    // 'showEditorAndPreview'?
     case 'showEditor':
       assertIsFromEditorToComments();
       showEditor(true);

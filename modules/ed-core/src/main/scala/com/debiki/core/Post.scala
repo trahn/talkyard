@@ -266,7 +266,7 @@ case class DraftLocator(
       require(toUserId.isDefined, s"Bad direct message draft: $this [TyE6RKW201]")
       require(categoryId.isEmpty && postId.isEmpty && pageId.isEmpty && postNr.isEmpty,
         s"Bad direct message draft: $this [TyE6RKW202]")
-    case DraftType.Edit | DraftType.Reply| DraftType.ProgressPost =>
+    case DraftType.Edit | DraftType.Reply | DraftType.ProgressPost =>
       require(pageId.isDefined && postNr.isDefined && postId.isDefined,
           s"Bad $draftType draft: $this [TyE5BKRT201]")
       require(categoryId.isEmpty && toUserId.isEmpty,

@@ -231,6 +231,8 @@ interface Post {
   // Client side only ------
   // If this post / these changes don't yet exist — it's a preview.
   isPreview?: boolean;
+  // Is a number if the draft has been saved server side (then the server has
+  // assigned it a number).
   isForDraftNr?: DraftNr | true;
   // If we're editing this post right now.
   isEditing?: boolean;

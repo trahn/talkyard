@@ -176,8 +176,7 @@ export function linkToDraftSource(draft: Draft, pageId?: PageId, postNr?: PostNr
       // so instead just scroll it into view. (Instead, using above FragActionAndReplyToPost
       // would try to open any Discussion section reply draft instead? Or?)
       const draftPostNr = post_makePreviewIdNr(draft.forWhat.postNr, PostType.BottomComment);
-      const hashFragAction = '#' + FragParamPostNr + draftPostNr;
-      theLink = maybeNewPageUrl() + hashFragAction;
+      theLink = maybeNewPageUrl() + FragParamPostNr + draftPostNr;
       break;
     case DraftType.Edit:
       theLink = maybeNewPageUrl() + FragParamPostNr + postNr + FragActionAndEditPost;

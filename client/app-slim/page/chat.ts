@@ -172,7 +172,7 @@ const ChatMessage = createComponent({
   edit: function() {
     this.setState({ isEditing: true });
     const post: Post = this.props.post;
-    editor.openEditorToEditPostNr(post.nr, (wasSaved, text) => {
+    editor.openToEditPostNr(post.nr, (wasSaved, text) => {
       this.setState({ isEditing: false });
     });
   },
@@ -375,7 +375,7 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
         draftType: DraftType.Reply,
         pageId: page.pageId,
         postNr: BodyNr,
-        postId: bodyPostId,
+        postId: bodyPostId,  // ?? why incl here, but not when saving draft (50285RK)
       };
       const newState: Partial<ChatMessageEditorState> = { scriptsLoaded: true };
       this.setState(newState);
@@ -429,6 +429,7 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
       draftType: DraftType.Reply,
       pageId: store.currentPageId,
       postNr: BodyNr,
+      // No postId here? (50285RK)
     };
 
     if (store.currentPage) {
