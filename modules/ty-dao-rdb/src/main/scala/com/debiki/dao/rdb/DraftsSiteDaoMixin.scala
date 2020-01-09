@@ -141,8 +141,8 @@ trait DraftsSiteDaoMixin extends SiteTransaction {
     val query = s"""
       select d.* from drafts3 d inner join posts3 p
         on d.site_id = p.site_id
-        ${/* This finds both edit drafts, and reply drafts — then, post_id is the parent
-         post we're replying to. */}
+        -- This finds edit drafts, and also reply drafts — then, post_id is the parent
+        -- post being replied to.
         and d.post_id = p.unique_post_id
       where d.site_id = ?
         and d.by_user_id = ?

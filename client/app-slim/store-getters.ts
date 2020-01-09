@@ -55,7 +55,7 @@ export function store_getAuthorOrMissing(store: Store, post: Post): BriefUser {
     };
   }
 
-  const user = store_getUserOrMissing(store, post.authorId, false);
+  const user = store_getUserOrMissing(store, post.authorId);
   if (user.isMissing) {
     logError("Author " + post.authorId + " missing, page: " +
       store.currentPageId + ", post nr: " + post.nr + " [EsE6TK2R0]");
@@ -64,16 +64,19 @@ export function store_getAuthorOrMissing(store: Store, post: Post): BriefUser {
 }
 
 
-export function store_getUserOrMissing(store: Store, userId: UserId, errorCode2): BriefUser {
+export function store_getUserOrMissing(store: Store, userId: UserId,
+      errorCode2?: string): BriefUser {
   const user = store.usersByIdBrief[userId];
   if (!user) {
-    if (errorCode2) logError("User " + userId + " missing, page: " + store.currentPageId +
-        ' [EsE38GT2R-' + errorCode2 + ']');
+    if (errorCode2) {
+      logError(`Participant ${userId} missing, page: ${store.currentPageId}` +
+        ` [TyE0PP-${errorCode2}]`);
+    }
     return {
       id: userId,
       // The first char is shown in the avatar image [7ED8A2M]. Use a square, not a character,
       // so it'll be easier to debug-find-out that something is amiss.
-      fullName: "□ missing, id: " + userId + " [EsE4FK07_]",
+      fullName: `□ missing, id: ${userId} [EsE4FK07_]`,
       isMissing: true,
     };
   }

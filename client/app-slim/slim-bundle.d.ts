@@ -145,7 +145,7 @@ declare namespace debiki2 {
 
   var createComponent: any;       // don't use — I'm renaming to createFactory
   var createClassAndFactory: any; // don't use — I'm renaming to createFactory
-  function createFactory<P, S = {}>(compSpec: React.ComponentSpec<P, S>): React.Factory<any>;
+  function createFactory<P, S = any>(compSpec: React.ComponentSpec<P, S>): React.Factory<any>;
 
 
   function replaceById(itemsWithId: any[], replacement);
@@ -284,7 +284,9 @@ declare namespace debiki2 {
   var user_isGuest;
   function store_maySendDirectMessageTo(store: Store, user: UserInclDetails): boolean;
   var page_isGroupTalk;
-  let store_getUserOrMissing;
+
+  function store_getAuthorOrMissing(store: Store, post: Post): BriefUser;
+  function store_getUserOrMissing(store: Store, userId: UserId, errorCode2?: string): BriefUser;
   var store_thisIsMyPage;
 
   function draftType_toPostType(draftType: DraftType): PostType | undefined;
@@ -416,7 +418,8 @@ declare namespace debiki2 {
   var MenuItemLink;
   var MenuItemsMany;
   var MenuItemDivider;
-  var UserName;
+  function UserName(props: {
+    user: BriefUser, store: Store, makeLink?: boolean, onClick?: any, avoidFullName?: boolean });
   var FacebookLogoImage;
 
   // More stuff, place where?

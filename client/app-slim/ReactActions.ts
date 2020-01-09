@@ -887,7 +887,8 @@ export function scrollToPreview(ps: {
   // If editing body, use some more margin, so the page title and "By (author)"
   // stays visible — and, in a chat, so that the "Preview:" text is visible
   // (it's not included in `selector`).
-  const marginTop = ps.isEditingBody || ps.isChat ? 110 : 50;
+  const isReplyingToOp = false; // todo
+  const marginTop = ps.isEditingBody || isReplyingToOp || ps.isChat ? 110 : 50;
 
   // If we're in an embedded comments iframe, then, there's another iframe for the
   // editor. Then scroll a bit more, so that other iframe won't occlude the preview.

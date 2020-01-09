@@ -303,12 +303,13 @@ export const Editor = createFactory<any, EditorState>({
           this.saveDraftSoon();
           // Scroll down so people will see the new line we just appended.
           scrollToBottom(this.refs.rtaTextarea.textareaRef);
-          this.updatePreviewSoon({ onDone: () => {
-            // This happens to early — maybe a onebox can take long to load? So wait for a while.
-            setTimeout(() => {
-              scrollToBottom(this.refs.preview);
-            }, 800);
-          }});
+          this.updatePreviewSoon();
+          // This happens to early — maybe a onebox can take long to load?
+          // Or the preview takes a while to update. — So wait for a while.
+          setTimeout(() => {
+            if (this.isGone) return;
+            scrollToBottom(this.refs.preview);
+          }, 900);
         });
       },
     });
@@ -686,6 +687,7 @@ export const Editor = createFactory<any, EditorState>({
       };
       this.setState(newState, () => {
         this.focusInputFields();
+        this.scrollToPreview = true;
         this.updatePreviewSoon();
       });
     };
@@ -826,11 +828,14 @@ export const Editor = createFactory<any, EditorState>({
     return true;
   },
 
-  updatePreviewNow: function(ps: { scrollToPreview?: true, onDone?: () => void } = {}) {
+  updatePreviewNow: function() {
     // This function is debounce-d, so the editor might have been cleared
     // and closed already, or even unmounted.
     if (this.isGone || !this.state.visible)
       return;
+
+    const scrollToPreview = this.scrollToPreview;
+    delete this.scrollToPreview;
 
     // (COULD verify still edits same post/thing, or not needed?)
     const isEditingBody = this.state.editingPostNr === BodyNr;
@@ -851,7 +856,7 @@ export const Editor = createFactory<any, EditorState>({
       // Show an in-page preview, unless we're creating a new page.
       if (!this.state.newPageRole) {
         const params: ShowEditsPreviewParams = {
-          scrollToPreview: ps.scrollToPreview,
+          scrollToPreview,
           safeHtml,
           editorsPageId: this.state.editorsPageId,
         };
@@ -866,8 +871,6 @@ export const Editor = createFactory<any, EditorState>({
         ReactActions.showEditsPreview(params);
         // We'll hide the preview, wheh closing the editor, here: (TGLPRVW)
       }
-
-      ps.onDone?.();
     });
   },
 
@@ -1296,7 +1299,8 @@ export const Editor = createFactory<any, EditorState>({
     ReactActions.onEditorOpen(() => {
       if (this.isGone || !this.state.visible) return;
       this.focusInputFields();
-      this.updatePreviewSoon({ scrollToPreview: true });
+      this.scrollToPreview = true;
+      this.updatePreviewSoon();
     });
   },
 
@@ -1412,12 +1416,29 @@ export const Editor = createFactory<any, EditorState>({
   },
 
   render: function() {
-    const state = this.state;
+    const state: EditorState = this.state;
     const store: Store = state.store;
+
+    // BUG? should use editorsRealPage instead? Don't change this now — too untested.
     const page: Page = store.currentPage;
+    const anyEditorsRealPage = store.pagesById[state.editorsPageId];
+    const editorsRealPage = anyEditorsRealPage || store.currentPage;
+
     const me: Myself = store.me;
     let settings: SettingsVisibleClientSide = store.settings;
     const isPrivateGroup = page_isPrivateGroup(this.state.newPageRole);
+
+    // @ifdef DEBUG
+    // This'd mean we've opened the editor, but then navigated to a different page —
+    // and lots of code below, thinks that this new page, is the one we're editing
+    // things on? Could be some bug here. Let's get notified about that,
+    // in dev mode:
+    dieIf(state.editorsPageId && page.pageId !== state.editorsPageId,
+        `Nav to new page? state.editorsPageId: '${state.editorsPageId}', ` +
+        `but store.currentPage.id: '${page.pageId}' [TyE02WUGPJ5]`);
+    dieIf(state.editorsPageId && !anyEditorsRealPage,
+        `No anyEditorsRealPage? editorsPageId: ${state.editorsPageId} [TyE6SKUTPG4]`);
+    // @endif
 
     // We'll disable the editor, until any draft has been loaded. [5AKBW20] Otherwise one might
     // start typing, and then the draft gets loaded (which might take some seconds if
@@ -1524,9 +1545,11 @@ export const Editor = createFactory<any, EditorState>({
     const editingPostNr = this.state.editingPostNr;
     const replyToPostNrs = this.state.replyToPostNrs;
     const isOrigPostReply = _.isEqual([BodyNr], replyToPostNrs);
+    const repliesToNotOrigPost = replyToPostNrs.length && !isOrigPostReply;
+    // ----- Delete these?:
     const isChatComment = replyToPostNrs.length === 1 && replyToPostNrs[0] === NoPostId;
-    const isChatReply = replyToPostNrs.indexOf(NoPostId) !== -1 && !isChatComment;
     const isMindMapNode = replyToPostNrs.length === 1 && page.pageRole === PageRole.MindMap;
+    // --------------------
 
     let doingWhatInfo: any;
     if (_.isNumber(editingPostNr)) {
@@ -1579,21 +1602,37 @@ export const Editor = createFactory<any, EditorState>({
     else if (isMindMapNode) {
       doingWhatInfo = "Add mind map node:";
     }
-    else if (state.anyPostType === PostType.BottomComment) {
+    else if (state.anyPostType === PostType.BottomComment && !repliesToNotOrigPost) {
       doingWhatInfo = t.e.AppendComment;
     }
     else if (replyToPostNrs.length > 0) {
       doingWhatInfo =
         r.span({},
-          isChatReply ? "Chat reply to " : t.e.ReplyTo,
+          t.e.ReplyTo,
           _.filter(replyToPostNrs, (id) => id !== NoPostId).map((postNr, index) => {
+            const parentPost: Post | undefined = editorsRealPage?.postsByNr[postNr];
+            const parentAuthor: BriefUser | undefined =
+                parentPost && store_getAuthorOrMissing(store, parentPost);
+            // If replying to a blog post, then, it got auto created by the System
+            // user. Don't show "Reply to System".
+            const isReplyingToBlogPost = eds.isInEmbeddedEditor && postNr === BodyNr;
+
+            let replyingToWhat;
+            if (parentAuthor && !isReplyingToBlogPost) {
+              replyingToWhat = UserName({ user: parentAuthor, store,
+                  makeLink: false, onClick: null, avoidFullName: true });
+            }
+            else {
+              // Is this dead code?
+              replyingToWhat = postNr === BodyNrStr ?
+                  t.e.ReplyTo_theOrigPost : t.e.ReplyTo_post + postNr;
+            }
+
             const anyAnd = index > 0 ? " and " : '';
-            const whichPost = postNr === BodyNrStr ?
-                t.e.ReplyTo_theOrigPost : t.e.ReplyTo_post + postNr;
             return (
               (<any> r.span)({ key: postNr },   // span has no .key, weird [TYPEERROR]
                 anyAnd,
-                r.a({ onClick: () => this.scrollPostIntoView(postNr) }, whichPost)));
+                r.a({ onClick: () => this.scrollPostIntoView(postNr) }, replyingToWhat)));
           }),
           ':');
     }
