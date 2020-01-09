@@ -927,10 +927,12 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
   const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
   const isChat = page && page_isChatChannel(page.pageRole);
 
+  // If' we've navigated to a different page, then, any preview is gone already.
+  const isOtherPage = ps.editorsPageId && ps.editorsPageId !== store.currentPageId;
+
   // A bit dupl debug checks (49307558).
   // @ifdef DEBUG
   dieIf(!page, 'TyE407AKSHPW24');
-  dieIf(ps.editorsPageId && ps.editorsPageId !== store.currentPageId, 'TyE603KUDRP2');
   dieIf(ps.replyToNr && isChat, 'TyE62SKHSW604');
   dieIf(!ps.editorsPageId && !eds.isInEmbeddedCommentsIframe &&
       !isChat && location.pathname.indexOf(ApiUrlPathPrefix) === -1, 'TyE6QSADTH04');
@@ -939,7 +941,10 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
   let patch: StorePatch = {};
   let highlightPostNrAfter: PostNr;
 
-  if (ps.keepPreview) {
+  if (isOtherPage) {
+    // The preview is gone already, since we've navigated away.
+  }
+  else if (ps.keepPreview) {
     // Thsi happens if we're editing a chat message in the advanced editor — we can
     // continue typing in the cat message text box, and keep the preview.
   }
@@ -964,9 +969,11 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
   patchTheStore(patch);
 
   // And then, later:
-  setTimeout(() => {
-    highlightPostNrBrieflyIfThere(highlightPostNrAfter);
-  }, 200);
+  if (!isOtherPage) {
+    setTimeout(() => {
+      highlightPostNrBrieflyIfThere(highlightPostNrAfter);
+    }, 200);
+  }
 }
 
 
