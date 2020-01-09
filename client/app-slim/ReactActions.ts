@@ -524,9 +524,9 @@ export function doUrlFragmentAction(newHashFragment?: string) {
     switch (fragAction.type) {
       case FragActionType.ReplyToPost:
         // CLEAN_UP Dupl code [5AKBR30W02]
-        // Break out debiki2.ReactActions.editReplyTo(postNr)  action?
+        // Break out debiki2.ReactActions.composeReplyTo(postNr)  action?
         if (eds.isInEmbeddedCommentsIframe) {
-          sendToEditorIframe(['editorToggleReply', [postNr, true]]);
+          sendToEditorIframe(['editorToggleReply', [postNr, true, PostType.Normal]]);
         }
         else {
           // Normal = incl in draft + url?
@@ -810,7 +810,10 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   if (isOtherPage)
     return;
 
-  const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
+  // Quick hack, dupl code: If in iframe, and page got lazy-created, its store.pagesById
+  // is wrong — so just access it via store.currentPage instead. [UPDLZYPID]
+  const page = eds.isInIframe ? store.currentPage : (
+      ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage);
   // @ifdef DEBUG
   dieIf(!page, 'TyE3930KRG');
   // @endif
@@ -927,7 +930,11 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
   }
 
   const store: Store = ReactStore.allData();
-  const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
+
+  // Quick hack, dupl code: If in iframe, and page got lazy-created, its store.pagesById
+  // is wrong — so just access it via store.currentPage instead. [UPDLZYPID]
+  const page = eds.isInIframe ? store.currentPage : (
+      ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage);
   const isChat = page && page_isChatChannel(page.pageRole);
 
   // If' we've navigated to a different page, then, any preview is gone already.

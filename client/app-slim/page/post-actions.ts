@@ -193,7 +193,8 @@ export const PostActions = createComponent({
       const inclInReply = true; // legacy (was for multireplies: toggle incl-in-reply or not)
       if (eds.isInEmbeddedCommentsIframe) {
         window.parent.postMessage(
-            JSON.stringify(['editorToggleReply', [post.nr, inclInReply]]), eds.embeddingOrigin);
+            JSON.stringify(['editorToggleReply', [post.nr, inclInReply, newPostType]]),
+            eds.embeddingOrigin);
       }
       else {
         debiki2.editor.toggleWriteReplyToPostNr(post.nr, inclInReply, newPostType);

@@ -575,7 +575,8 @@ const RootPostAndComments = createComponent({
       const inclInReply = true; // legacy (was for multireplies: toggle incl-in-reply or not)
       if (eds.isInEmbeddedCommentsIframe) {
         window.parent.postMessage(
-            JSON.stringify(['editorToggleReply', [BodyNr, inclInReply]]), eds.embeddingOrigin);
+            JSON.stringify(['editorToggleReply', [BodyNr, inclInReply, postType]]),
+            eds.embeddingOrigin);
       }
       else {
         editor.toggleWriteReplyToPostNr(BodyNr, inclInReply, postType);

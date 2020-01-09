@@ -1597,20 +1597,50 @@ export const Editor = createFactory<any, EditorState>({
         r.span({},
           t.e.ReplyTo,
           _.filter(replyToPostNrs, (id) => id !== NoPostId).map((postNr, index) => {
-            const parentPost: Post | undefined = editorsPage?.postsByNr[postNr];
-            const parentAuthor: BriefUser | undefined =
-                parentPost && store_getAuthorOrMissing(store, parentPost);
             // If replying to a blog post, then, it got auto created by the System
             // user. Don't show "Reply to System".
             const isReplyingToBlogPost = eds.isInEmbeddedEditor && postNr === BodyNr;
 
+            let parentAuthor: BriefUser | undefined;
+            if (isReplyingToBlogPost) {
+              // Blog post author name is unknown. (There's an orig post by System,
+              // but "Replying to @system" would be incorect.)
+            }
+            else if (eds.isInEmbeddedEditor) {
+              // Quick HACK, works fine in practice, although "not allowed" to do
+              // this in React:
+              // Here in the embedded editor, we haven't loaded any page or author names
+              // — get them from the main iframe instead (the one with all the comments).
+              // COULD ask about this approach (reading from another iframe) at
+              // StackOverflow, but for now, just try-catch and fallback to the old
+              // "Replying to post-1234" text:
+              // (If re-enabling multireplies, then don't do this in a loop?  map() above)
+              try {
+                const mainStore = getMainWin().debiki2.ReactStore.allData();
+                const parentPost = mainStore.currentPage.postsByNr[postNr];
+                parentAuthor = parentPost && store_getAuthorOrMissing(mainStore, parentPost);
+                parentAuthor = { ...parentAuthor }; // maybe better to use a clone?
+              }
+              catch (ex) {
+                // Oh well.
+                if (!this.loggedMainStoreWarning) {
+                  console.warn("Error reading author name from main iframe", ex);
+                  debugger;
+                  this.loggedMainStoreWarning = true;
+                }
+              }
+            }
+            else {
+              const parentPost: Post | undefined = editorsPage?.postsByNr[postNr];
+              parentAuthor = parentPost && store_getAuthorOrMissing(store, parentPost);
+            }
+
             let replyingToWhat;
-            if (parentAuthor && !isReplyingToBlogPost) {
+            if (parentAuthor) {
               replyingToWhat = UserName({ user: parentAuthor, store,
                   makeLink: false, onClick: null, avoidFullName: true });
             }
             else {
-              // Is this dead code?
               replyingToWhat = postNr === BodyNrStr ?
                   t.e.ReplyTo_theOrigPost : t.e.ReplyTo_post + postNr;
             }
@@ -1903,8 +1933,10 @@ function isEmbeddedNotYetCreatedPage(props: { store: Store, messageToUserIds }):
   // If is-no-page, then the page doesn't exist. However, we might be in the user
   // profile section, composing a reply or a direct message to someone — then we
   // do save drafts.
-  const result = store_isNoPage(props.store) && !props.messageToUserIds.length &&
-      location.pathname.indexOf(ApiUrlPathPrefix) !== 0;
+  const result =
+      store_isNoPage(props.store) &&
+      !props.messageToUserIds.length && // could skip this?
+      eds.isInIframe;
   // @ifdef DEBUG
   dieIf(result && !eds.isInEmbeddedEditor, 'TyE7KBTF32');
   // @endif
