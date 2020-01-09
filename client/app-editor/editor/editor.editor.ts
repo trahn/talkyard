@@ -939,7 +939,7 @@ export const Editor = createFactory<any, EditorState>({
     }
     else {
       // Show a can-continue-editing tips.
-      if (this.state.draftStatus === DraftStatus.Saved) {
+      if (this.state.draftStatus === DraftStatus.SavedServerSide) {
         help.openHelpDialogUnlessHidden({ content: t.e.CanContinueEditing, id: '7YK35W1' });
       }
       this.saveDraftClearAndClose();
@@ -1124,7 +1124,7 @@ export const Editor = createFactory<any, EditorState>({
 
       this.setState({
         draft: draftWithNr,
-        draftStatus: DraftStatus.Saved,
+        draftStatus: DraftStatus.SavedServerSide,
       });
 
       if (callbackThatClosesEditor) {
@@ -1905,7 +1905,7 @@ export function DraftStatusInfo(props: { draftStatus: DraftStatus, draftNr: numb
     case DraftStatus.NothingHappened: break;
     case DraftStatus.EditsUndone: draftStatusText = t.e.DraftUnchanged; break;
     case DraftStatus.SavedInBrowser: draftStatusText = "Draft saved, in browser session."; break;  // I18N
-    case DraftStatus.Saved: draftStatusText = t.e.DraftSaved(draftNr); break;
+    case DraftStatus.SavedServerSide: draftStatusText = t.e.DraftSaved(draftNr); break;
     case DraftStatus.Deleted: draftStatusText = t.e.DraftDeleted(draftNr); break;
     case DraftStatus.ShouldSave: draftStatusText = t.e.WillSaveDraft(draftNr); break;
     case DraftStatus.SavingSmall: draftStatusText = t.e.SavingDraft(draftNr); break;

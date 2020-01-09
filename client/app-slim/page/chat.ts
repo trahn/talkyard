@@ -482,7 +482,7 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
       console.debug("...Saved draft.");
       this.setState({
         draft: draftWithNr,
-        draftStatus: DraftStatus.Saved,
+        draftStatus: DraftStatus.SavedServerSide,
       });
     }), useBeacon || this.setCannotSaveDraft);
   },

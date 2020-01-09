@@ -470,7 +470,7 @@ export function doUrlFragmentAction(newHashFragment?: string) {
         // Don't re-open the editor, if going to another page, and then back.
         location.hash = '';
         break;
-      case FragActionType.ScrollToElemId:
+      case FragActionType.ScrollToSelector:
         // Add some margin-top, so the topbar won't occlude the #elem-id.
         // There're CSS solutions, like: (see https://stackoverflow.com/a/28824157/694469)
         //    :target::before {
@@ -489,7 +489,7 @@ export function doUrlFragmentAction(newHashFragment?: string) {
           // might suddently change its height, when the user scrolls down and the topbar
           // changes from a position:static to a fixed bar, which can look slightly different.
           const moreThanTopbarHeight = 90;
-          utils.scrollIntoViewInPageColumn(fragAction.elemId, {
+          utils.scrollIntoViewInPageColumn(fragAction.selector, {
             marginTop: moreThanTopbarHeight, marginBottom: 999,
             // This id is from the url; maybe it's weird, not a valid css selector.
             maybeBadId: true,
@@ -596,8 +596,8 @@ export function findUrlFragmentAction(hashFragment?: string): FragAction | undef
 
   if (theHashFrag.indexOf(FragActionHashScrollToBottom) >= 0) {
     return {
-      type: FragActionType.ScrollToElemId,
-      elemId: '.s_APAs',
+      type: FragActionType.ScrollToSelector,
+      selector: '.s_APAs',
     };
   }
 
@@ -606,8 +606,8 @@ export function findUrlFragmentAction(hashFragment?: string): FragAction | undef
   const postNr: PostNr | undefined = findIntInHashFrag(FragParamPostNr, theHashFrag);
   if (!postNr) {
     return !theHashFrag ? undefined : {
-      type: FragActionType.ScrollToElemId,
-      elemId: theHashFrag,
+      type: FragActionType.ScrollToSelector,
+      selector: theHashFrag,
     };
   }
 

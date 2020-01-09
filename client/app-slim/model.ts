@@ -77,13 +77,13 @@ interface FragAction {
   topicType?: PageRole;
   postNr?: PostNr;
   draftNr?: DraftNr;
-  elemId?: string;  // COULD RENAME 'selector', since is a selelector, e.g. '#some-id'
+  selector?: string;
 }
 
 
 const enum FragActionType {
   // Javascript-scrolls to show the #hash-fragment, taking the topbar height into account.
-  ScrollToElemId = 11,  // COULD RENAME to ScrollToSelector
+  ScrollToSelector = 11,
   ScrollToPost = 12,
   ScrollToLatestPost = 13,
   ReplyToPost = 21,
@@ -1166,7 +1166,7 @@ const enum LoginReason {
   TryToAccessNotFoundPage = 14,
   SubmitEditorText = 15,
   PostEmbeddedComment = 16,  // dupl [8UKBR2AD5]
-  PostProgressNote = 17,   // REAME to PostProgressPost
+  PostProgressPost = 17,
 }
 
 

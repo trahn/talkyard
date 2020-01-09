@@ -563,7 +563,7 @@ const RootPostAndComments = createComponent({
 
     const loginToWhat =
         postType === PostType.BottomComment
-          ? LoginReason.PostProgressNote
+          ? LoginReason.PostProgressPost
           : (page.pageRole === PageRole.EmbeddedComments
               ? LoginReason.PostEmbeddedComment
               : 'LoginToComment');

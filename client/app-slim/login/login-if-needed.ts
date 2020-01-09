@@ -35,7 +35,7 @@ export function loginIfNeededReturnToPost(
       willCompose?: boolean) {
   // If posting a progress post, then, after login, scroll to the bottom, so one
   // can click that button again — it's at the bottom.
-  const anchor = loginReason === LoginReason.PostProgressNote
+  const anchor = loginReason === LoginReason.PostProgressPost
       ? FragActionHashScrollToBottom
       : (postNr < FirstReplyNr ? '' : (
           // We use 'comment-' for embedded comments; they start on nr 1 = post 2. [2PAWC0]
