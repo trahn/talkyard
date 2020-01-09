@@ -1901,8 +1901,10 @@ function makeDefaultReplyText(store: Store, postIds: PostId[]): string {
 // draft locator. Could use the embedding URL though.
 function isEmbeddedNotYetCreatedPage(props: { store: Store, messageToUserIds }): boolean {
   // If is-no-page, then the page doesn't exist. However, we might be in the user
-  // profile section, writing a direct message to someone — then we do save drafts.
-  const result = store_isNoPage(props.store) && !props.messageToUserIds.length;
+  // profile section, composing a reply or a direct message to someone — then we
+  // do save drafts.
+  const result = store_isNoPage(props.store) && !props.messageToUserIds.length &&
+      location.pathname.indexOf(ApiUrlPathPrefix) !== 0;
   // @ifdef DEBUG
   dieIf(result && !eds.isInEmbeddedEditor, 'TyE7KBTF32');
   // @endif

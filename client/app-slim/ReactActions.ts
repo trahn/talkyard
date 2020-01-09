@@ -804,12 +804,15 @@ export function showEditsPreview(ps: ShowEditsPreviewParams) {
   }
 
   const store: Store = ReactStore.allData();
-  const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
 
+  // If' we've navigated to a different page, then, any preview is gone already.
+  const isOtherPage = ps.editorsPageId && ps.editorsPageId !== store.currentPageId;
+  if (isOtherPage)
+    return;
+
+  const page = ps.editorsPageId ? store.pagesById[ps.editorsPageId] : store.currentPage;
   // @ifdef DEBUG
   dieIf(!page, 'TyE3930KRG');
-  // This'd be weird? Showing a preveiw on this page, for a post on *another* page?
-  dieIf(ps.editorsPageId && ps.editorsPageId !== store.currentPageId, 'TyE04DKSUGK4');
   // @endif
 
   if (!page)
