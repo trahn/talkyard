@@ -406,29 +406,38 @@ export function uncollapsePost(post) {
 }
 
 
-export function loadAndShowPost(postNr: PostNr, showChildrenToo?: boolean, callback?) {
+// COULD RENAME to loadIfNeededThenShow(AndHighlight)Post
+export function loadAndShowPost(postNr: PostNr, showChildrenToo?: boolean,
+       callback?: (post?: Post) => void) {
   const store: Store = ReactStore.allData();
   const page: Page = store.currentPage;
   const anyPost = page.postsByNr[postNr];
   if (!anyPost || _.isEmpty(anyPost.sanitizedHtml)) {
     Server.loadPostByNr(postNr, (storePatch: StorePatch) => {
+      // (The server should have replied 404 Not Found if post not found; then,
+      // this code wouldn't run.)
       patchTheStore(storePatch);
-      showAndCallCallback();
+      const posts: Post[] = storePatch.postsByPageId && storePatch.postsByPageId[page.pageId];
+      // @ifdef DEBUG
+      dieIf(posts?.length !== 1, 'TyE06QKUSMF4');
+      // @endif
+      const post: Post = posts && posts[0];
+      showAndCallCallback(post);
     });
   }
   else {
-    showAndCallCallback();
+    showAndCallCallback(anyPost);
   }
-  function showAndCallCallback() {
+
+  function showAndCallCallback(post: Post) {
     ReactDispatcher.handleViewAction({
       actionType: actionTypes.ShowPost,
       postNr: postNr,
       showChildrenToo: showChildrenToo,
+      onDone: function() {
+        callback?.(post);
+      },
     });
-    if (callback) {
-      // Wait until React has rendered everything. (When exactly does that happen?)
-      setTimeout(callback, 1);
-    }
   }
 }
 
@@ -505,30 +514,21 @@ export function doUrlFragmentAction(newHashFragment?: string) {
     return;
   }
 
-  const postAnchor = `post-${postNr}`;
-
-  const postElem = $byId(postAnchor);
-  if (postElem) {
-    // Do frag action directly — post already loaded.
-    debiki.internal.showAndHighlightPost(postElem);
-    doAfterLoadedAnyPost();
-  }
-  else {
-    // Load post, then do the frag action. (loadAndShowPost() highlights it, right?)
-    loadAndShowPost(postNr, undefined, doAfterLoadedAnyPost);
-  }
-
-  function doAfterLoadedAnyPost() {
+  // Load post if needed, highlight it, and do the frag action.
+  loadAndShowPost(postNr, false /* don't load children too */, function(post?: Post) {
     let resetHashFrag = true;
     markAnyNotificationAsSeen(postNr);
     switch (fragAction.type) {
       case FragActionType.ReplyToPost:
-        // Normal = incl in draft + url?  — Hmm but at other places, we use
-        // the same post type, as the post we reply to?  [REPLTYPE]
-        composeReplyTo(postNr, PostType.Normal);
+        // Use the same post type, as the post we reply to. [REPLTYPE]
+        if (post) {
+          composeReplyTo(postNr, post.postType);
+        }
         break;
       case FragActionType.EditPost:
-        editPostWithNr(postNr);
+        if (post) {
+          editPostWithNr(postNr);
+        }
         break;
       case FragActionType.ScrollToLatestPost:
       case FragActionType.ScrollToPost:
@@ -547,9 +547,9 @@ export function doUrlFragmentAction(newHashFragment?: string) {
     if (resetHashFrag) {
       // Does this sometimes make the browser annoyingly scroll-jump so this post is at
       // the very top of the win, occluded by the topbar?
-      location.hash = '#' + postAnchor;
+      location.hash = `#post-${postNr}`;
     }
-  }
+  });
 }
 
 

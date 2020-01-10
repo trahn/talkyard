@@ -1226,7 +1226,7 @@ export const Editor = createFactory<any, EditorState>({
     this.throwIfBadTitleOrText(null, t.e.PleaseDontDeleteAll);
     Server.saveEdits(this.state.editingPostNr, this.state.text, this.anyDraftNr(), () => {
       this.callOnDoneCallback(true);
-      this.clearAndClose();   // ?? won't this overw the new post with origPostBeforeEdits? [359264FKUGP] ?
+      this.clearAndClose(); // [6027TKWAPJ5]
     });
   },
 

@@ -375,7 +375,7 @@ const ChatMessageEditor = createFactory<any, ChatMessageEditorState>({
         draftType: DraftType.Reply,
         pageId: page.pageId,
         postNr: BodyNr,
-        postId: bodyPostId,  // ?? why incl here, but not when saving draft (50285RK)  ?
+        postId: bodyPostId,  // ?? why incl here, but not when saving draft (50285RK)
       };
       const newState: Partial<ChatMessageEditorState> = { scriptsLoaded: true };
       this.setState(newState);

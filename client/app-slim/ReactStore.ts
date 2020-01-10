@@ -846,8 +846,7 @@ function updatePost(post: Post, pageId: PageId, isCollapsing?: boolean) {
   setTimeout(() => {
     debiki2.page.Hacks.processPosts();
     if (!oldVersion && post.authorId === store.me.id && !post.isPreview) {
-      // Show the user his/her new post.
-      // Hmm, this just scrolls to it? it's loaded already, always?
+      // Scroll to and highligt this new / edited post.
       ReactActions.loadAndShowPost(post.nr);
     }
   }, 1);
@@ -1022,6 +1021,7 @@ function showPostNr(postNr: PostNr, showChildrenToo?: boolean) {
       break;
     }
     postNrsSeen[post.nr] = true;
+    // But minor BUG: Usually we want to leave isPostCollapsed = false? (305RKTU).
     uncollapseOne(post);
     post = page.postsByNr[post.parentNr];
   }
@@ -1059,7 +1059,7 @@ function uncollapseOne(post: Post) {
     return;
   var p2 = clonePost(post.nr);
   p2.isTreeCollapsed = false;
-  p2.isPostCollapsed = false;
+  p2.isPostCollapsed = false;  // sometimes we don't want this though  (305RKTU)
   p2.summarize = false;
   p2.squash = false;
   updatePost(p2, store.currentPageId, true);
@@ -1269,8 +1269,8 @@ function updateNotificationCounts(notf: Notification, add: boolean) {
 function patchTheStore(storePatch: StorePatch) {
   if (isDefined2(storePatch.setEditorOpen) && storePatch.setEditorOpen !== store.isEditorOpen) {
     store.isEditorOpen = storePatch.setEditorOpen;
-    // Need to update all posts when the editor opens (hide their Reply buttons),
-    // so cannot quick-update just one post.
+    // Need to update all posts when the editor opens, to hide all Reply buttons
+    // — so cannot quick-update just one post.
     store.cannotQuickUpdate = true;
   }
 

@@ -1297,13 +1297,16 @@ export function saveEdits(postNr: number, text: string, deleteDraftNr: DraftNr,
       doneCallback: () => void) {
   postJson('/-/edit', {
     data: {
-      pageId: getPageId(),
+      pageId: getPageId(),  // BUG should be: editorsPageId ?
       postNr: postNr,
       text: text,
       deleteDraftNr,
     },
     success: (editedPost) => {
+      // This hides the editor and places back the orig post [6027TKWAPJ5]
+      // — there'll be a short flash-of-original-version:
       doneCallback();
+      // ... until here we upsert the edited version instead:
       ReactActions.handleEditResult(editedPost);
     }
   });

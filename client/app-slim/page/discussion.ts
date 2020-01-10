@@ -612,7 +612,6 @@ const RootPostAndComments = createComponent({
         r.div({ className: 's_Pg_DdInf' },
           pageRole === PageRole.EmbeddedComments ? t.d.DiscDeld : t.d.PageDeld);
 
-    // Test this at Ty.io, homepage?  ?
     const previewInfo = !rootPost.isEditing ? null :
         r.div({ className: 's_T_YourPrvw' },
           t.e.PreviewC + ' ',
@@ -651,7 +650,7 @@ const RootPostAndComments = createComponent({
         r.div({ className: threadClass },
           previewInfo,
           body,
-          NoCommentsPageActions({ post: rootPost, me: me })));
+          NoCommentsPageActions({ store, post: rootPost })));
     }
 
     let solvedBy;

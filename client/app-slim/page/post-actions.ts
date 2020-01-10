@@ -68,7 +68,8 @@ export const NoCommentsPageActions = createComponent({
   },
 
   render: function() {
-    const me: Myself = this.props.me;
+    const store: Store = this.props.store;
+    const me: Myself = store.me;
     const post: Post = this.props.post;
 
     if (!post.isApproved && !post.sanitizedHtml)
@@ -78,7 +79,6 @@ export const NoCommentsPageActions = createComponent({
       return null;
 
     // Dupl code [305RKTDJ2]
-    // UNTESTED this only, not at the other place. ?
     const myPageData: MyPageData = me.myCurrentPageData;
     const anyEditsDraft = _.find(myPageData.myDrafts, (d: Draft) => {
       return d.forWhat.postId === post.uniqueId && 
@@ -86,10 +86,12 @@ export const NoCommentsPageActions = createComponent({
     });
     const unfinEditsClass = anyEditsDraft ? ' s_UnfinEd' : '';
 
-    const actions =
+    const editBtn = store.isEditorOpen ? null :
         r.a({ className: 'dw-a dw-a-edit icon-edit' + unfinEditsClass, onClick: this.onEditClick },
           t.EditV + (
-            anyEditsDraft ? " — Unfinished edits" : null));  // I18N [0436BKRFP2]
+            anyEditsDraft ? " — Unfinished edits" : ''));  // I18N [0436BKRFP2]
+
+    const actions = editBtn;
 
     return (
       r.div({ className: 'dw-p-as dw-as' }, actions));
