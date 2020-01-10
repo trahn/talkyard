@@ -78,7 +78,7 @@ export const NoCommentsPageActions = createComponent({
       return null;
 
     // Dupl code [305RKTDJ2]
-    // UNTESTED this only, not at the other place.
+    // UNTESTED this only, not at the other place. ?
     const myPageData: MyPageData = me.myCurrentPageData;
     const anyEditsDraft = _.find(myPageData.myDrafts, (d: Draft) => {
       return d.forWhat.postId === post.uniqueId && 

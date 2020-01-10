@@ -874,6 +874,9 @@ export const Editor = createFactory<any, EditorState>({
     if (this.isGone || !this.state.visible)
       return;
 
+    // This cannot be a function param, because updatePreviewSoon() is debounce():d,
+    // and only args from the last invokation are sent — so any scrollToPreview = true
+    // argument, could get "debounce-overwritten".
     const scrollToPreview = this.scrollToPreview;
     delete this.scrollToPreview;
 
@@ -1223,7 +1226,7 @@ export const Editor = createFactory<any, EditorState>({
     this.throwIfBadTitleOrText(null, t.e.PleaseDontDeleteAll);
     Server.saveEdits(this.state.editingPostNr, this.state.text, this.anyDraftNr(), () => {
       this.callOnDoneCallback(true);
-      this.clearAndClose();   // ?? won't this overw the new post with origPostBeforeEdits? [359264FKUGP]
+      this.clearAndClose();   // ?? won't this overw the new post with origPostBeforeEdits? [359264FKUGP] ?
     });
   },
 

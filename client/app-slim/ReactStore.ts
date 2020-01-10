@@ -1125,10 +1125,10 @@ function sortPostNrsInPlaceBestFirst(postNrs: PostNr[], postsByNr: { [nr: number
         return postApprovedOrCreatedBefore(postA, postB)
     }
 
-    // Show any preview post first, directly below the post it replies to — so it's
-    // simpler to see what one is replying to. Even though the reply maybe won't
-    // appear at that exact location (maybe another reply with more like votes will
-    // appear first).
+    // Show any preview post first, directly below the post it replies to — then,
+    // it's simpler to see what post one is replying to. Even though the reply maybe
+    // won't appear at that exact location (maybe there're other replies with more
+    // like votes to show first).
     if (onlyOneIsPreview)
       return postA.isPreview ? -1 : +1;
 
@@ -1269,7 +1269,7 @@ function updateNotificationCounts(notf: Notification, add: boolean) {
 function patchTheStore(storePatch: StorePatch) {
   if (isDefined2(storePatch.setEditorOpen) && storePatch.setEditorOpen !== store.isEditorOpen) {
     store.isEditorOpen = storePatch.setEditorOpen;
-    // Need to update all posts — hide their Reply buttons — when the editor opens,
+    // Need to update all posts when the editor opens (hide their Reply buttons),
     // so cannot quick-update just one post.
     store.cannotQuickUpdate = true;
   }

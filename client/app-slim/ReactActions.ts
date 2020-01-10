@@ -523,7 +523,8 @@ export function doUrlFragmentAction(newHashFragment?: string) {
     markAnyNotificationAsSeen(postNr);
     switch (fragAction.type) {
       case FragActionType.ReplyToPost:
-        // Normal = incl in draft + url?
+        // Normal = incl in draft + url?  — Hmm but at other places, we use
+        // the same post type, as the post we reply to?  [REPLTYPE]
         composeReplyTo(postNr, PostType.Normal);
         break;
       case FragActionType.EditPost:
@@ -935,7 +936,7 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
     // The preview is gone already, since we've navigated away.
   }
   else if (ps.keepPreview) {
-    // Thsi happens if we're editing a chat message in the advanced editor — we can
+    // This happens if we're editing a chat message in the advanced editor — we can
     // continue typing in the cat message text box, and keep the preview.
   }
   else if (ps.editingPostNr) {
