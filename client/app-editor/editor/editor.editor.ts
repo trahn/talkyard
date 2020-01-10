@@ -69,6 +69,7 @@ export const listUsernamesTrigger = {
 
 interface EditorState {
   store: Store;
+  embMainStoreCopy?: Partial<Store>;
   visible: boolean;
   replyToPostNrs: PostNr[];
   anyPostType?: PostType;
@@ -452,7 +453,46 @@ export const Editor = createFactory<any, EditorState>({
       postType = PostType.Flat;
     }
 
+    // If we're in the blog comments editor iframe, then, usernames are avaiable
+    // only in the "main" iframe — the one with all comments. Let's clone
+    // the parts we need, and store in our own local React store.
+    //
+    // COULD ask about this approach (i.e. using data from another iframe
+    // on the same domain) at StackOverflow, but for now, just try-catch
+    // — if won't work, some old ode that shows:
+    //   "Replying to post-1234" text:
+    // will run instead — all fine.
+    //
+    let embMainStoreCopy: Partial<Store> | undefined;
+    if (eds.isInEmbeddedEditor) {
+      try {
+        const mainStore: Store = getMainWin().debiki2.ReactStore.allData();
+        embMainStoreCopy = {
+          // Clone data from the other iframe, so as not to 1) hold on to it
+          // and thereby maybe preventing data in that other frame from being
+          // freed. Probably not needed, since this arene't html tags, just
+          // variables, but let's clone anyway just in case.
+          // And 2) not getting it changed "at any time" by the other iframe
+          // — React.js wouldn't llike that.
+          currentPage: _.cloneDeep(mainStore.currentPage),
+          usersByIdBrief: _.cloneDeep(mainStore.usersByIdBrief),
+          currentPageId: mainStore.currentPageId,
+        };
+      }
+      catch (ex) {
+        // Oh well.
+        if (!this.loggedCloneError) {
+          console.warn("Couldn't clone Partial<Store> from main iframe [TyECLONSTOR]", ex);
+          // @ifdef DEBUG
+          debugger;
+          // @endif
+          this.loggedCloneError = true;
+        }
+      }
+    }
+
     const newState: Partial<EditorState> = {
+      embMainStoreCopy,
       anyPostType: postType,
       editorsCategories: store.currentCategories,
       editorsPageId: store.currentPageId,
@@ -1607,26 +1647,20 @@ export const Editor = createFactory<any, EditorState>({
               // but "Replying to @system" would be incorect.)
             }
             else if (eds.isInEmbeddedEditor) {
-              // Quick HACK, works fine in practice, although "not allowed" to do
-              // this in React:
               // Here in the embedded editor, we haven't loaded any page or author names
               // — get them from the main iframe instead (the one with all the comments).
-              // COULD ask about this approach (reading from another iframe) at
-              // StackOverflow, but for now, just try-catch and fallback to the old
-              // "Replying to post-1234" text:
-              // (If re-enabling multireplies, then don't do this in a loop?  map() above)
+              // This is a new and a bit odd approach? (Jan 2020.) Let's wrap in try (although
+              // shouldn't be needed).)
               try {
-                const mainStore = getMainWin().debiki2.ReactStore.allData();
-                const parentPost = mainStore.currentPage.postsByNr[postNr];
-                parentAuthor = parentPost && store_getAuthorOrMissing(mainStore, parentPost);
-                parentAuthor = { ...parentAuthor }; // maybe better to use a clone?
+                const parentPost = state.embMainStoreCopy.currentPage.postsByNr[postNr];
+                parentAuthor = parentPost && store_getAuthorOrMissing(
+                    state.embMainStoreCopy as Store, parentPost);
               }
               catch (ex) {
-                // Oh well.
-                if (!this.loggedMainStoreWarning) {
-                  console.warn("Error reading author name from main iframe", ex);
+                if (!this.loggedStoreCloneWarning) {
+                  console.warn("Error getting author name from main iframe store clone", ex);
                   debugger;
-                  this.loggedMainStoreWarning = true;
+                  this.loggedStoreCloneWarning = true;
                 }
               }
             }

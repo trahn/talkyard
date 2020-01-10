@@ -64,7 +64,7 @@ export const NoCommentsPageActions = createComponent({
   displayName: 'NoCommentsPageActions',
 
   onEditClick: function(event) {
-    debiki2.ReactActions.editPostWithNr(this.props.post.nr);
+    ReactActions.editPostWithNr(this.props.post.nr);
   },
 
   render: function() {
@@ -133,10 +133,10 @@ export const PostActions = createComponent({
   displayName: 'PostActions',
 
   onAcceptAnswerClick: function() {
-    debiki2.ReactActions.acceptAnswer(this.props.post.uniqueId);
+    ReactActions.acceptAnswer(this.props.post.uniqueId);
   },
   onUnacceptAnswerClick: function() {
-    debiki2.ReactActions.unacceptAnswer();
+    ReactActions.unacceptAnswer();
   },
 
   componentWillUnmount: function() {
@@ -177,7 +177,7 @@ export const PostActions = createComponent({
       }
     }
     else {
-      // Use the same type as the post we're replying to.
+      // Use the same type as the post we're replying to. [REPLTYPE]
       newPostType = (post.postType === PostType.Flat || post.postType === PostType.BottomComment)
           ? post.postType
           : PostType.Normal;
@@ -188,22 +188,12 @@ export const PostActions = createComponent({
 
     login.loginIfNeededReturnToPost(loginToWhat, post.nr, () => {
       if (this.isGone) return;
-
-      // Dupl code [5AKBR30W02]
-      const inclInReply = true; // legacy (was for multireplies: toggle incl-in-reply or not)
-      if (eds.isInEmbeddedCommentsIframe) {
-        window.parent.postMessage(
-            JSON.stringify(['editorToggleReply', [post.nr, inclInReply, newPostType]]),
-            eds.embeddingOrigin);
-      }
-      else {
-        debiki2.editor.toggleWriteReplyToPostNr(post.nr, inclInReply, newPostType);
-      }
+      ReactActions.composeReplyTo(post.nr, newPostType);
     }, true);
   },
 
   onEditClick: function(event) {
-    debiki2.ReactActions.editPostWithNr(this.props.post.nr);
+    ReactActions.editPostWithNr(this.props.post.nr);
   },
   onLinkClick: function(event) {
     morebundle.openShareDialog(this.props.post, event.target);
@@ -576,7 +566,7 @@ function toggleVote(store: Store, post: Post, voteType: string, toggleOn: boolea
   };
 
   debiki2.Server.saveVote(data, function(updatedPost) {
-    debiki2.ReactActions.vote(updatedPost, action, voteType);
+    ReactActions.vote(updatedPost, action, voteType);
   });
 }
 

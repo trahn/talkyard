@@ -474,7 +474,7 @@ function runAllE2eTests {
   runE2eTest s/wdio target/e2e/wdio.conf.js --b3c      --only embedded-comments-no-cookies-guest $args
   runE2eTest s/wdio target/e2e/wdio.conf.js --b3c      --only embedded-comments-no-cookies-verif-gmail $args
   runE2eTest s/wdio target/e2e/wdio.conf.js --b3c      --only embedded-comments-no-cookies-unverif-gmail $args
-  runE2eTest s/wdio target/e2e/wdio.conf.js            --only embedded-comments-edit-and-vote $args
+  runE2eTest s/wdio target/e2e/wdio.conf.js            --only embedded-comments-edit-and-vote.test $args
   runE2eTest s/wdio target/e2e/wdio.conf.js            --only embedded-comments-edit-and-vote-old-name $args
   runE2eTest s/wdio target/e2e/wdio.conf.js            --only embedded-comments-vote-first $args
   runE2eTest s/wdio target/e2e/wdio.conf.js            --only embedded-comments-conf-notf-pref-first $args

@@ -407,7 +407,7 @@ export function uncollapsePost(post) {
 
 
 export function loadAndShowPost(postNr: PostNr, showChildrenToo?: boolean, callback?) {
-  const store: Store = debiki2.ReactStore.allData();
+  const store: Store = ReactStore.allData();
   const page: Page = store.currentPage;
   const anyPost = page.postsByNr[postNr];
   if (!anyPost || _.isEmpty(anyPost.sanitizedHtml)) {
@@ -523,19 +523,11 @@ export function doUrlFragmentAction(newHashFragment?: string) {
     markAnyNotificationAsSeen(postNr);
     switch (fragAction.type) {
       case FragActionType.ReplyToPost:
-        // CLEAN_UP Dupl code [5AKBR30W02]
-        // Break out debiki2.ReactActions.composeReplyTo(postNr)  action?
-        if (eds.isInEmbeddedCommentsIframe) {
-          sendToEditorIframe(['editorToggleReply', [postNr, true, PostType.Normal]]);
-        }
-        else {
-          // Normal = incl in draft + url?
-          // UNTESTED just removed Server.loadEditorAndMoreBundles, done by toggle...:
-          debiki2.editor.toggleWriteReplyToPostNr(postNr, true, PostType.Normal);
-        }
+        // Normal = incl in draft + url?
+        composeReplyTo(postNr, PostType.Normal);
         break;
       case FragActionType.EditPost:
-        debiki2.ReactActions.editPostWithNr(postNr);
+        editPostWithNr(postNr);
         break;
       case FragActionType.ScrollToLatestPost:
       case FragActionType.ScrollToPost:
@@ -761,18 +753,6 @@ function markAnyNotificationAsSeen(postNr: number) {
 }
 
 
-export function resumeDraft(post: Post) {
-  // Dupl code [5AKBR30W02]
-  const inclInReply = true;
-  if (eds.isInEmbeddedCommentsIframe) {
-    sendToEditorIframe(['editorToggleReply', [post.parentNr, inclInReply, post.postType]]);
-  }
-  else {
-    debiki2.editor.toggleWriteReplyToPostNr(post.parentNr, inclInReply, post.postType);
-  }
-}
-
-
 export function onEditorOpen(onDone: () => void) {
   // @ifdef DEBUG
   // Use messages 'editorToggleReply' or 'editorEditPost' instead.
@@ -983,6 +963,17 @@ export function hideEditorAndPreview(ps: HideEditorAndPreviewParams) {
     setTimeout(() => {
       highlightPostNrBrieflyIfThere(highlightPostNrAfter);
     }, 200);
+  }
+}
+
+
+export function composeReplyTo(parentNr: PostNr, replyPostType: PostType) {
+  const inclInReply = true; // legacy — was for multireplies: toggle incl-in-reply or not
+  if (eds.isInEmbeddedCommentsIframe) {
+    sendToEditorIframe(['editorToggleReply', [parentNr, inclInReply, replyPostType]]);
+  }
+  else {
+    editor.toggleWriteReplyToPostNr(parentNr, inclInReply, replyPostType);
   }
 }
 

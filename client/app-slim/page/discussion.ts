@@ -556,7 +556,6 @@ const RootPostAndComments = createComponent({
     // Some dupl code below. [69KFUW20]
 
     event.preventDefault();
-    const eventTarget = event.target; // React.js will clear the field
 
     const store: Store = this.props.store;
     const page: Page = store.currentPage;
@@ -570,17 +569,7 @@ const RootPostAndComments = createComponent({
 
     login.loginIfNeededReturnToPost(loginToWhat, BodyNr, () => {    // SSO E2E TESTS_MISSSING
       if (this.isGone) return;
-
-      // Dupl code [5AKBR30W02]
-      const inclInReply = true; // legacy (was for multireplies: toggle incl-in-reply or not)
-      if (eds.isInEmbeddedCommentsIframe) {
-        window.parent.postMessage(
-            JSON.stringify(['editorToggleReply', [BodyNr, inclInReply, postType]]),
-            eds.embeddingOrigin);
-      }
-      else {
-        editor.toggleWriteReplyToPostNr(BodyNr, inclInReply, postType);
-      }
+      ReactActions.composeReplyTo(BodyNr, postType);
     });
   },
 
@@ -1076,10 +1065,11 @@ const Thread = createComponent({
   },
 
   resumeDraft: function(event) {
-    // Tiny bit dupl code [5AKBR30W02]
     const post: Post = this.props.post;
     event.preventDefault();
-    ReactActions.resumeDraft(post);
+    // This will load our new reply draft text.
+    // Let the reply be of the same post type as the post we're replying to. [REPLTYPE]
+    ReactActions.composeReplyTo(post.parentNr, post.postType);
   },
 
   render: function() {
