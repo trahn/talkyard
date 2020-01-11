@@ -1877,7 +1877,7 @@ export const Editor = createFactory<any, EditorState>({
               r.div({ className: 'preview', id: 't_E_Preview', ref: 'preview',
                   dangerouslySetInnerHTML: { __html: this.state.safePreviewHtml }})),
             r.div({ className: 'submit-cancel-btns' },
-              PrimaryButton({ onClick: this.onSaveClick, tabIndex: 1, className: 'e2eSaveBtn' },
+              PrimaryButton({ onClick: this.onSaveClick, tabIndex: 1, className: 'e_E_SaveB' },
                 saveButtonTitle),
               Button({ onClick: this.onCancelClick, tabIndex: 1, className: 'e_EdCancelB' },
                 cancelButtonTitle),

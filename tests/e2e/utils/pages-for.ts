@@ -577,9 +577,9 @@ function pagesFor(browser) {
           // Not logMessage — we're in the browser.
           console.log(`Scrolling into view in page column: ${selector}`);
           window['debiki2'].utils.scrollIntoViewInPageColumn(
-            selector, { marginTop: 100, marginBottom: 100, duration: 100 });
+              selector, { marginTop: 100, marginBottom: 100, duration: 100 });
         }, selector);
-        browser.pause(220);
+        browser.pause(150);
         const curScrollY = api.getPageScrollY();
         if (lastScrollY === curScrollY) {
           // Done scrolling;
@@ -1595,7 +1595,7 @@ function pagesFor(browser) {
       clickHome: function() {
         if (browser.isVisible('.esLegal_home_link')) {
           api.rememberCurrentUrl();
-          browser.click('.esLegal_home_link');
+          api.waitAndClick('.esLegal_home_link');
           api.waitForNewUrl();
         }
         else {
@@ -2336,9 +2336,9 @@ function pagesFor(browser) {
         }
 
         /*
-        browser.click('#signIn');
+        api.waitAndClick('#signIn');
         api.waitForEnabled('#submit_approve_access');
-        browser.click('#submit_approve_access'); */
+        api.waitAndClick('#submit_approve_access'); */
 
         // If you need to verify you're a human:
         // browser.deb ug();
@@ -2581,7 +2581,7 @@ function pagesFor(browser) {
       },
 
       clickResetPasswordCloseDialogSwitchTab: function() {
-        browser.click('.dw-reset-pswd');
+        api.waitAndClick('.dw-reset-pswd');
         // The login dialog should close when we click the reset-password link. [5KWE02X]
         api.waitUntilModalGone();
         api.waitUntilLoadingOverlayGone();
@@ -2688,7 +2688,7 @@ function pagesFor(browser) {
       },
 
       save: function() {
-        browser.click('.e2eSaveBtn');
+        api.waitAndClick('.e_Ttl_SaveB');
         api.pageTitle.waitForVisible();
       },
 
@@ -3141,7 +3141,7 @@ function pagesFor(browser) {
       },
 
       submit: function(ps: { closeStupidDialogAndRefresh?: true } = {}) {
-        browser.click('#e2eAddUsD_SubmitB');
+        api.waitAndClick('#e2eAddUsD_SubmitB');
         // Later: browser.waitUntilModalGone();
         // But for now:  [5FKE0WY2]
         if (ps.closeStupidDialogAndRefresh) {
@@ -3211,7 +3211,7 @@ function pagesFor(browser) {
       },
 
       cancelNoHelp: function() {
-        browser.click('#debiki-editor-controller .e_EdCancelB');
+        api.waitAndClick('#debiki-editor-controller .e_EdCancelB');
         // doesn't work :-(  api.waitForNotVisible('#debiki-editor-controller');
         // just waits forever
       },
@@ -3238,7 +3238,7 @@ function pagesFor(browser) {
       },
 
       clickSave: function() {
-        api.waitAndClick('#debiki-editor-controller .e2eSaveBtn');
+        api.waitAndClick('.e_E_SaveB');
       },
 
       saveWaitForNewPage: function() {
@@ -3352,6 +3352,10 @@ function pagesFor(browser) {
       },
 
       clickHomeNavLink: function() {
+        // api.waitAndClick() results in this error:
+        //   Failed to execute 'querySelector' on 'Document':
+        //   'a=Home' is not a valid selector.
+        // Instead:
         browser.click("a=Home");
       },
 
@@ -3758,7 +3762,7 @@ function pagesFor(browser) {
           //}
           // Instead: (and is this even slightly better?)
           if (browser.isVisible('.esDropModal_CloseB')) {
-            browser.click('.esDropModal_CloseB');
+            api.waitAndClick('.esDropModal_CloseB');
           }
           if (!api.topic.isChangePageDialogOpen())
             break;
