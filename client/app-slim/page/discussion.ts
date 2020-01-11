@@ -1741,7 +1741,7 @@ export const PostBody = createComponent({
 
     if (post.isPreview && post.isForDraftNr && !post.isEditing) {
       return r.pre({ className: 's_P_Prvw' },
-        post.unsafeSource);
+        post.unsafeSource);  // [DFTSRC]
     }
 
     let body;

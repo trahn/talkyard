@@ -164,19 +164,21 @@ export function linkToDraftSource(draft: Draft, pageId?: PageId, postNr?: PostNr
     case DraftType.DirectMessage:
       theLink = linkToSendMessage(locator.toUserId);
       break;
-    case DraftType.Reply:
-      // No fragment action needed for chat messages — then the chat message input box is shown
-      // by default, and will load the draft. Do incl a '#' hash though so + &draftNr=... works.
-      const hashFragmentAction = draft.postType === PostType.ChatMessage ? '#' :
-          FragParamPostNr + locator.postNr + FragActionAndReplyToPost;
-      theLink = maybeNewPageUrl() + hashFragmentAction;
-      break;
+    case DraftType.Reply: // fall through
     case DraftType.ProgressPost:
-      // Right now, there's now way to auto-open a ProgressPost draft,
-      // so instead just scroll it into view. (Instead, using above FragActionAndReplyToPost
-      // would try to open any Discussion section reply draft instead? Or?)
-      const draftPostNr = post_makePreviewIdNr(draft.forWhat.postNr, PostType.BottomComment);
-      theLink = maybeNewPageUrl() + FragParamPostNr + draftPostNr;
+      let hashFragAction: string;
+      if (draft.postType === PostType.ChatMessage) {
+        // No fragment action needed for chat messages — then the chat message input box is shown
+        // by default, and will load the draft. Do incl a '#' hash though so + &draftNr=... works.
+        hashFragAction = '#';
+      }
+      else {
+        hashFragAction =
+            FragParamPostNr + locator.postNr +
+            FragActionAndReplyToPost +
+            FragParamReplyType + draft.postType;
+      }
+      theLink = maybeNewPageUrl() + hashFragAction;
       break;
     case DraftType.Edit:
       theLink = maybeNewPageUrl() + FragParamPostNr + postNr + FragActionAndEditPost;

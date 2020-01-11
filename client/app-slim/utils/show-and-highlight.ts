@@ -43,7 +43,7 @@ function addAnySidebarWidth(options) {
 }
 
 
-debiki.internal.showAndHighlightPost = function(postElem, options) {
+debiki.internal.showAndHighlightPost = function(postElem, options: ShowPostOpts) {
   if (!postElem) {
     logError('Got no post [EdE7JKWD20]');
     return;

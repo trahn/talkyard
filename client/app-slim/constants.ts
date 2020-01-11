@@ -144,6 +144,7 @@ const FragActionHashScrollToBottom  = '#scrollToBottom';  // rename to ...Bottom
 const FragParamPostNr = '#post-';
 const FragParamCommentNr = '#comment-';
 const FragParamDraftNr = '&draftNr=';
+const FragParamReplyType = '&replyType=';
 const FragParamTopicType = '&topicType=';
 const FragParamCategoryId = '&categoryId=';
 

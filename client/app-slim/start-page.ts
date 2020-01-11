@@ -276,7 +276,25 @@ function renderPageInBrowser() {
         event.preventDefault();
       }
     }); */
-    window.addEventListener('hashchange', function(eventIgnored) {
+
+    window.addEventListener('hashchange', function(event) {
+      function isAction(url: string) {
+        const replyIx = url.indexOf(FragActionAndReplyToPost);
+        const editIx = url.indexOf(FragActionAndEditPost);
+        return replyIx > 0 || editIx > 0;
+      }
+
+      const oldHashWasPostAction = isAction(event.oldURL);
+      const newIsJustLink = !isAction(event.newURL);
+
+      if (oldHashWasPostAction && newIsJustLink) {
+        // Ignore. Looks as if we went to a '#post-1234&replyToPost' url, and what
+        // then happens is that the editor opens, and we remove '&replyToPost'
+        // from the url, so as not to reopen the editor to write a reply, if
+        // navigating back. [RSTHASH]
+        event.preventDefault(); // maybe do always? [4904754RSKP] — not tested, let's wait.
+        return;
+      }
       debiki2.ReactActions.doUrlFragmentAction();
     });
   });

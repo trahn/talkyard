@@ -642,6 +642,7 @@ function findOneTimeLoginSecret() {
     // someone copies the url with this soon-used-up secret in, the server
     // will reply Error and Talkyard would show an error message in the browser.
     debugLog("Found one time login secret, removing from url: " + oneTimeLoginSecret);
+    // Maybe use history.replaceState({}, '', '# ...') instead?
     window.location.hash = window.location.hash.replace(
         'talkyardOneTimeLoginSecret=' + oneTimeLoginSecret, '');
   }

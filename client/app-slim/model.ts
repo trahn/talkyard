@@ -65,7 +65,10 @@ interface RedirPathProps {
  * #post-123: We'll scroll to post 123.
  *
  * #post-456&replyToPost&draftNr=7 — we'll scroll to post 456,
- * open the editor to reply, and load draft nr 7.
+ * open the editor to reply, and load draft nr 7
+ * Actually, as of Jan 2020, I think loads whichever draft that replies to
+ * post 456 — without looking at the draftNr. But, later, if there
+ * happens to be many drafts, then could use draftNr to choose one.
  *
  * /-/users/someone#composeDirectMessage[&draftNr=234] — we go to user @someone,
  * open the editor to write a direct message, and, if draft nr specified,
@@ -75,6 +78,7 @@ interface FragAction {
   type: FragActionType;
   categoryId?: CategoryId;
   topicType?: PageRole;
+  replyType?: PostType;
   postNr?: PostNr;
   draftNr?: DraftNr;
   selector?: string;
@@ -227,6 +231,14 @@ type EditsDoneHandler = (
     wasSaved: boolean, text: string, draft: Draft | null, draftStatus: DraftStatus) => void;
 
 
+interface ShowPostOpts {
+  marginTop?: number;
+  marginBottom?: number;
+  marginRight?: number;
+  marginLeft?: number;
+}
+
+
 interface Post {
   // Client side only ------
   // If this post / these changes don't yet exist — it's a preview.
@@ -268,7 +280,9 @@ interface Post {
   branchSideways: number;
   likeScore: number;
   childNrsSorted: number[];
-  unsafeSource?: string;  // for titles, we insert the post source, as text (no html in titles)
+  // For titles, we insert the post source, as text (no html in titles).
+  // And for drafts, we show a <pre>the-source</pre>, for now. [DFTSRC]
+  unsafeSource?: string;
   sanitizedHtml?: string;
   tags?: string[];
   numPendingFlags?: number;

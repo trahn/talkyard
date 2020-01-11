@@ -1727,7 +1727,7 @@ function pagesFor(browser) {
       searchFor: function(phrase: string) {
         api.waitAndClick('.esTB_SearchBtn');
         api.waitAndSetValue('.esTB_SearchD input[name="q"]', phrase);
-        browser.click('.e_SearchB');
+        api.waitAndClick('.e_SearchB');
         api.searchResultsPage.waitForResults(phrase);
       },
 
@@ -1892,8 +1892,7 @@ function pagesFor(browser) {
       },
 
       close: function() {
-        api.waitForVisible('.esWB_CloseB');
-        browser.click('.esWB_CloseB');
+        api.waitAndClick('.esWB_CloseB');
         api.waitUntilGone('#esWatchbarColumn');
       },
 
@@ -1949,8 +1948,7 @@ function pagesFor(browser) {
 
     contextbar: {
       close: function() {
-        api.waitForVisible('.esCtxbar_close');
-        browser.click('.esCtxbar_close');
+        api.waitAndClick('.esCtxbar_close');
         api.waitUntilGone('#esThisbarColumn');
       },
 
@@ -3240,7 +3238,7 @@ function pagesFor(browser) {
       },
 
       clickSave: function() {
-        browser.click('#debiki-editor-controller .e2eSaveBtn');
+        api.waitAndClick('#debiki-editor-controller .e2eSaveBtn');
       },
 
       saveWaitForNewPage: function() {
@@ -4057,7 +4055,7 @@ function pagesFor(browser) {
 
     customForm: {
       submit: function() {
-        browser.click('form input[type="submit"]');
+        api.waitAndClick('form input[type="submit"]');
         api.waitAndAssertVisibleTextMatches('.esFormThanks', "Thank you");
       },
 
@@ -4111,7 +4109,7 @@ function pagesFor(browser) {
       },
 
       clickSearchButton: function() {
-        browser.click('.s_SP_SearchB');
+        api.waitAndClick('.s_SP_SearchB');
       },
 
       waitForResults: function(phrase: string) {

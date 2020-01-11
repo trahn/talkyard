@@ -412,7 +412,13 @@ export function loadAndShowPost(postNr: PostNr, showChildrenToo?: boolean,
   const store: Store = ReactStore.allData();
   const page: Page = store.currentPage;
   const anyPost = page.postsByNr[postNr];
-  if (!anyPost || _.isEmpty(anyPost.sanitizedHtml)) {
+
+  // If post missing, or text not loaded — then, we need to load it.
+  // However draft posts have unsafeSource only, not any preview html. [DFTSRC]
+  const needLoadPost = !anyPost ||
+      (_.isEmpty(anyPost.sanitizedHtml) && !anyPost.isForDraftNr);
+
+  if (needLoadPost) {
     Server.loadPostByNr(postNr, (storePatch: StorePatch) => {
       // (The server should have replied 404 Not Found if post not found; then,
       // this code wouldn't run.)
@@ -465,7 +471,7 @@ export function doUrlFragmentAction(newHashFragment?: string) {
   }
 
   // @ifdef DEBUG
-  console.debug(`Doing url #action ${fragAction.type}...`);
+  console.debug(`Doing url frag action ${toStr(fragAction)}...`);
   // @endif
 
   const postNr: PostNr | undefined = fragAction.postNr;
@@ -477,7 +483,7 @@ export function doUrlFragmentAction(newHashFragment?: string) {
       case FragActionType.ComposeTopic:
         editor.editNewForumPage(fragAction.categoryId, fragAction.topicType);
         // Don't re-open the editor, if going to another page, and then back.
-        location.hash = '';
+        history.replaceState({}, '', '#');
         break;
       case FragActionType.ScrollToSelector:
         // Add some margin-top, so the topbar won't occlude the #elem-id.
@@ -514,15 +520,26 @@ export function doUrlFragmentAction(newHashFragment?: string) {
     return;
   }
 
+  if (store.isEditorOpen) {
+    // Then we cannot open any draft in the editor (since it's open already)
+    // — ignore the frag action, and just scroll to the post or reply draft.
+    // If this is a reply draft, we need to calculate its temporary dummy post nr.
+    let nr2 = postNr;
+    if (fragAction.type === FragActionType.ReplyToPost) {
+      nr2 = post_makePreviewIdNr(postNr, fragAction.replyType);
+    }
+    loadAndShowPost(nr2);
+    return;
+  }
+
   // Load post if needed, highlight it, and do the frag action.
   loadAndShowPost(postNr, false /* don't load children too */, function(post?: Post) {
     let resetHashFrag = true;
     markAnyNotificationAsSeen(postNr);
     switch (fragAction.type) {
       case FragActionType.ReplyToPost:
-        // Use the same post type, as the post we reply to. [REPLTYPE]
         if (post) {
-          composeReplyTo(postNr, post.postType);
+          composeReplyTo(postNr, fragAction.replyType);
         }
         break;
       case FragActionType.EditPost:
@@ -543,11 +560,15 @@ export function doUrlFragmentAction(newHashFragment?: string) {
     // If going to another page, and then back — just scroll to the post, this time, but
     // don't open the editor. (Doing that, feels unexpected and confusing, to me. If
     // navigating away, then, probably one is done editing? Or has maybe submitted
-    // the post already.)
+    // the post already.) [RSTHASH]
     if (resetHashFrag) {
+      // Don't link to the orig post, that's just annoying (if navigating back,
+      // and the #post-1 hash makes the page jump to the top all the time).
+      // (Need '#' because just '' apparently has no effect.)
+      const newHash = postNr === BodyNr ? '#' : `#post-${postNr}`;
       // Does this sometimes make the browser annoyingly scroll-jump so this post is at
-      // the very top of the win, occluded by the topbar?
-      location.hash = `#post-${postNr}`;
+      // the very top of the win, occluded by the topbar? [4904754RSKP]
+      history.replaceState({}, '', newHash);
     }
   });
 }
@@ -567,6 +588,7 @@ export function findUrlFragmentAction(hashFragment?: string): FragAction | undef
   }
 
   const draftNr = findIntInHashFrag(FragParamDraftNr, theHashFrag);
+  const replyType = findIntInHashFrag(FragParamReplyType, theHashFrag);
   const topicType = findIntInHashFrag(FragParamTopicType, theHashFrag);
 
   if (theHashFrag.indexOf(FragActionHashComposeTopic) >= 0) {
@@ -615,7 +637,12 @@ export function findUrlFragmentAction(hashFragment?: string): FragAction | undef
     actionType = FragActionType.ScrollToPost;
   }
 
-  return { type: actionType, postNr, draftNr };
+  return {
+    type: actionType,
+    postNr,
+    draftNr,
+    replyType,
+  };
 }
 
 
@@ -979,9 +1006,10 @@ export function composeReplyTo(parentNr: PostNr, replyPostType: PostType) {
 }
 
 
-export function saveReply(postNrs: PostNr[], text: string, anyPostType: number,
-      draftToDelete: Draft | undefined, onDone?: () => void) {
-  Server.saveReply(postNrs, text, anyPostType, draftToDelete?.draftNr, (storePatch) => {
+export function saveReply(editorsPageId: PageId, postNrs: PostNr[], text: string,
+      anyPostType: number, draftToDelete: Draft | undefined, onDone?: () => void) {
+  Server.saveReply(editorsPageId, postNrs, text, anyPostType, draftToDelete?.draftNr,
+      (storePatch) => {
     handleReplyResult(storePatch, draftToDelete, onDone);
   });
 }

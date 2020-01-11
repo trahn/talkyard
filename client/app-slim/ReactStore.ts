@@ -517,24 +517,7 @@ ReactStore.activateMyself = function(anyNewMe: Myself) {
 
   addLocalStorageDataTo(anyNewMe || store.me);
 
-  // Show one's drafts: Create a preview post, for each new post draft (but not
-  // for edit drafts — then, we instead show a text "Unfinished edits" next to the
-  // edit button. [UFINEDT])
-  // (Do this also if not logged in — because there might still be drafts in one's
-  // browser local sessionStorage.)
-  // Skip chats though — any chat message draft is shown directly in the chat
-  // message text input box. [CHATPRVW]
-  if (!eds.isInEmbeddedEditor && !page_isChatChannel(store.currentPage?.pageRole)) {
-    _.each(myPageData.myDrafts, (draft: Draft) => {
-      const draftType = draft.forWhat.draftType;
-      if (draftType === DraftType.Reply || draftType === DraftType.ProgressPost) {
-        const post: Post | null = store_makePostForDraft(store, draft);
-        if (post) {
-          updatePost(post, store.currentPageId);
-        }
-      }
-    });
-  }
+  addMyDraftPosts(store, myPageData);
 
   if (!anyNewMe) {
     debiki2.pubsub.subscribeToServerEvents(store.me);
@@ -665,6 +648,29 @@ function addRestrictedCategories(restrictedCategories: Category[], categories: C
 ReactStore.allData = function(): Store {
   return store;
 };
+
+
+// Shows one's drafts: Create a preview post, for each new post draft (but not
+// for edit drafts — then, we instead show a text "Unfinished edits" next to the
+// edit button. [UFINEDT])
+// (Do this also if not logged in — because there might still be drafts in one's
+// browser local sessionStorage.)
+// Skip chats though — any chat message draft is shown directly in the chat
+// message text input box. [CHATPRVW]
+//
+function addMyDraftPosts(store: Store, myPageData: MyPageData) {
+  if (!eds.isInEmbeddedEditor && !page_isChatChannel(store.currentPage?.pageRole)) {
+    _.each(myPageData.myDrafts, (draft: Draft) => {
+      const draftType = draft.forWhat.draftType;
+      if (draftType === DraftType.Reply || draftType === DraftType.ProgressPost) {
+        const post: Post | null = store_makePostForDraft(store, draft);
+        if (post) {
+          updatePost(post, store.currentPageId);
+        }
+      }
+    });
+  }
+}
 
 
 function theStore_setOnlineUsers(numStrangersOnline: number, usersOnline: BriefUser[]) {
@@ -1026,7 +1032,13 @@ function showPostNr(postNr: PostNr, showChildrenToo?: boolean) {
     post = page.postsByNr[post.parentNr];
   }
   setTimeout(() => {
-    debiki.internal.showAndHighlightPost($byId('post-' + postNr));
+    const opts: ShowPostOpts = {};
+    if (postNr <= MaxVirtPostNr) {
+      // It's a draft. Add a bit more margin, because there's a "Your draft"
+      // text above. [03RKTG42]
+      opts.marginTop = 120;
+    }
+    debiki.internal.showAndHighlightPost($byId('post-' + postNr), opts);
     debiki2.page.Hacks.processPosts();
   }, 1);
 }
@@ -1537,6 +1549,10 @@ function showNewPage(newPage: Page, newPublicCategories: Category[], newUsers: B
     addPageToStrangersWatchbar(store.currentPage, store.me.watchbar);
   }
 
+  // COULD also load draft from the browser storage for this new page. [LDDFTS]
+  // Like:  addLocalStorageDataTo(me, isNewPage = true);
+  addMyDraftPosts(store, store.me.myCurrentPageData);
+
   // Make Back button work properly.
   debiki2.rememberBackUrl(correctedUrl);
 
@@ -1691,16 +1707,20 @@ function addLocalStorageDataTo(me: Myself) {
     me.watchbar[WatchbarSection.RecentTopics] = sessionWatchbar[WatchbarSection.RecentTopics];
   }
 
+  // COULD do this not only for embeded comments, but also for a forum
+  // — if compose-before-login enabled. [LDDFTS]
+  //
   // Any drafts in session storage? Wrap in try-catch in case browser privacy
   // settings forbids using sessionStorage.
   if (!eds.isInEmbeddedEditor) {
     try {
       Object.keys(sessionStorage).forEach(keyStr => {
-        if (keyStr.indexOf('embeddingUrl') >= 0) {
+        if (keyStr.indexOf('draftType') >= 0) {
           const locator: DraftLocator = JSON.parse(keyStr);
-          if (locator.embeddingUrl === eds.embeddingUrl) {
+          if (locator.embeddingUrl === eds.embeddingUrl ||
+              locator.pageId === store.currentPageId) {
             const draftStr = sessionStorage.getItem(keyStr);
-            const draft = JSON.parse(draftStr);
+            const draft: Draft = JSON.parse(draftStr);
             me.myCurrentPageData.myDrafts.push(draft);
           }
         }
@@ -1708,7 +1728,7 @@ function addLocalStorageDataTo(me: Myself) {
     }
     catch (ex) {
       // @ifdef DEBUG
-      console.debug(`Cannot access sessionStorage?`, ex)
+      console.debug(`Cannot access sessionStorage, or bad draft?`, ex)
       // @endif
       void 0; // [macro-bug], messes up file if 'endif' just before '}'
     }

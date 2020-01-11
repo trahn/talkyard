@@ -1224,7 +1224,15 @@ export const Editor = createFactory<any, EditorState>({
 
   saveEdits: function() {
     this.throwIfBadTitleOrText(null, t.e.PleaseDontDeleteAll);
-    Server.saveEdits(this.state.editingPostNr, this.state.text, this.anyDraftNr(), () => {
+    const state: EditorState = this.state;
+    Server.saveEdits(state.editorsPageId, state.editingPostNr, state.text,
+          this.anyDraftNr(), () => {
+      // BUG (harmless) poor UX: [JMPBCK] If we're no longer on the same page as
+      // the post we were editing (e.g. because keeping the editor open and
+      // navigating away) then, one won't see the edits appear. Probably should
+      // navigate back to the post that got edited? First show a popup:
+      //   "Go back and view the now edited post? It's on another page;
+      //   you have navigated away frome it, to here""
       this.callOnDoneCallback(true);
       this.clearAndClose(); // [6027TKWAPJ5]
     });
@@ -1232,8 +1240,11 @@ export const Editor = createFactory<any, EditorState>({
 
   saveNewPost: function() {
     this.throwIfBadTitleOrText(null, t.e.PleaseWriteSth);
-    ReactActions.saveReply(this.state.replyToPostNrs, this.state.text,
-          this.state.anyPostType, this.state.draft, () => {
+    const state: EditorState = this.state;
+    ReactActions.saveReply(state.editorsPageId, state.replyToPostNrs, state.text,
+          state.anyPostType, state.draft, () => {
+      // BUG (harmless) poor UX: See [JMPBCK] aboe.
+      // Also, if we've navigaated away, seems any draft won't get deleted.
       this.callOnDoneCallback(true);
       this.clearAndClose();
     });
