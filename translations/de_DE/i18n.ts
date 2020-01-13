@@ -18,222 +18,222 @@ var t_de_DE: TalkyardTranslations = t = {
 
   // A single or a few words, sorted alphabetically, to reuse everywhere.
 
-  Active: "Active",
-  Activity: "Activity",
-  Add: "Add",
-  AddingDots: "Adding ...",
+  Active: "Aktiv",
+  Activity: "Aktivität",
+  Add: "Hinzufügen",
+  AddingDots: "Hinzufügen ...",
   Admin: "Admin",
-  AdvSearch: "Advanced search",
-  Away: "Away",
-  Back: "Back",
+  AdvSearch: "Erweiterte Suche",
+  Away: "Fort",
+  Back: "Zurück",
   BlogN: "Blog",
-  Bookmarks: "Bookmarks",
-  Cancel: "Cancel",
-  Categories: "Categories",
-  Category: "Category",
-  ChangeV: "Change",
-  Continue: "Continue",
-  ClickToShow: "Click to show",
-  ChangeDots: "Change ...",
+  Bookmarks: "Lesezeichen",
+  Cancel: "Abbrechen",
+  Categories: "Kategorien",
+  Category: "Kategorie",
+  ChangeV: "Ändern",
+  Continue: "Weiter",
+  ClickToShow: "Klicken um anzuzeigen",
+  ChangeDots: "Ändern ...",
   ChatN: "Chat",
-  Chatting: "Chatting",
-  CheckYourEmail: "Check your email",
-  Close: "Close",
-  closed: "closed",
-  Created: "Created",
-  Delete: "Delete",
-  Deleted: "Deleted",
-  DirectMessage: "Direct message",
-  Discussion: "Discussion",
-  discussion: "discussion",
-  done: "done",
-  EditV: "Edit",
-  Editing: "Editing",
-  EmailAddress: "Email address",
-  EmailAddresses: "Email addresses",
-  EmailSentD: "Email sent.",
+  Chatting: "Chattend",
+  CheckYourEmail: "Checke deine Emails",
+  Close: "Schließen",
+  closed: "geschlossen",
+  Created: "Erstellt",
+  Delete: "Löschen",
+  Deleted: "Gelöscht",
+  DirectMessage: "Private Nachricht",
+  Discussion: "Diskussion",
+  discussion: "Diskussion",
+  done: "erledigt",
+  EditV: "Editieren",
+  Editing: "Wird editiert",
+  EmailAddress: "E-Mail-Adresse",
+  EmailAddresses: "E-Mail-Adressen",
+  EmailSentD: "E-Mail versandt.",
   Forum: "Forum",
-  GetNotifiedAbout: "Get notified about",
-  GroupsC: "Groups:",
-  Hide: "Hide",
+  GetNotifiedAbout: "Lass dich benachrichtigen über",
+  GroupsC: "Gruppen:",
+  Hide: "Verstecken",
   Home: "Home",
-  Idea: "Idea",
-  Join: "Join",
-  KbdShrtcsC: "Keyboard shortcuts: ",
-  Loading: "Loading...",
-  LoadMore: "Load more ...",
-  LogIn: "Log In",
-  LoggedInAs: "Logged in as ",
-  LogOut: "Log out",
-  Maybe: "Maybe",
-  Manage: "Manage",
-  Members: "Members",
-  MessageN: "Message",
-  MoreDots: "More...",
-  Move: "Move",
+  Idea: "Idee",
+  Join: "Beitreten",
+  KbdShrtcsC: "Tastaturkurzbefehle: ",
+  Loading: "Laden...",
+  LoadMore: "Lade weitere ...",
+  LogIn: "Einloggen",
+  LoggedInAs: "Eingeloggt als ",
+  LogOut: "Ausloggen",
+  Maybe: "Vielleicht",
+  Manage: "Managen",
+  Members: "Mitglieder",
+  MessageN: "Nachricht",
+  MoreDots: "Weitere...",
+  Move: "Verschieben",
   Name: "Name",
   NameC: "Name:",
-  NewTopic: "New topic",
-  NoCancel: "No, cancel",
-  Notifications: "Notifications",
-  NotImplemented: "(Not implemented)",
-  NotYet: "Not yet",
-  NoTitle: "No title",
-  NoTopics: "No topics.",
+  NewTopic: "Neues Thema",
+  NoCancel: "Nein, abbrechen",
+  Notifications: "Benachrichtigungen",
+  NotImplemented: "(Nicht implementiert)",
+  NotYet: "Noch nicht",
+  NoTitle: "Kein Titel",
+  NoTopics: "Keine Themen.",
   Okay: "Okay",
   OkayDots: "Okay ...",
   Online: "Online",
-  onePerLine: "one per line",
-  PreviewV: "Preview",
+  onePerLine: "eines pro Zeile",
+  PreviewV: "Vorschau",
   Problem: "Problem",
-  progressN: "progress",
-  Question: "Question",
-  Recent: "Recent",
-  Remove: "Remove",
-  Reopen: "Reopen",
-  ReplyV: "Reply",
-  Replying: "Replying",
-  Replies: "Replies",
-  replies: "replies",
-  Save: "Save",
-  SavingDots: "Saving ...",
-  SavedDot: "Saved.",
-  Search: "Search",
-  SendMsg: "Send Message",
-  SignUp: "Sign Up",
-  Solution: "Solution",
-  started: "started",
-  Summary: "Summary",
-  Submit: "Submit",
-  Tools: "Tools",
-  Topics: "Topics",
-  TopicTitle: "Topic title",
-  TopicType: "Topic type",
-  UploadingDots: "Uploading...",
-  Username: "Username",
-  Users: "Users",
-  Welcome: "Welcome",
+  progressN: "Fortschritt",
+  Question: "Frage",
+  Recent: "Kürzlich",
+  Remove: "Löschen",
+  Reopen: "Wiedereröffnen",
+  ReplyV: "Antworten",
+  Replying: "Antwortend",
+  Replies: "Antworten",
+  replies: "Antworten",
+  Save: "Speichern",
+  SavingDots: "Speichern ...",
+  SavedDot: "Gespeichert.",
+  Search: "Suchen",
+  SendMsg: "Nachricht senden",
+  SignUp: "Anmelden",
+  Solution: "Lösung",
+  started: "angefangen",
+  Summary: "Zusammenfassung",
+  Submit: "Senden",
+  Tools: "Werkzeuge",
+  Topics: "Themen",
+  TopicTitle: "Thementitel",
+  TopicType: "Themenart",
+  UploadingDots: "Hochladen...",
+  Username: "Benutzername",
+  Users: "Benutzer",
+  Welcome: "Willkommen",
   Wiki: "Wiki",
-  Yes: "Yes",
-  YesBye: "Yes, bye",
-  YesDoThat: "Yes, do that",
-  You: "You",
-  you: "you",
+  Yes: "Ja",
+  YesBye: "Ja, auf Wiedersehen",
+  YesDoThat: "Ja, mache das",
+  You: "Du",
+  you: "du",
 
   // Trust levels.
-  Guest:  "Guest",
-  NewMember: "New member",
-  BasicMember: "Basic member",
-  FullMember: "Full member",
-  TrustedMember: "Trusted member",
-  RegularMember: "Trusted regular",  // MISSING renamed Regular Member —> Trusted Regular [RENREGLS]
-  CoreMember: "Core member",
+  Guest:  "Gast",
+  NewMember: "Neues Mitglied",
+  BasicMember: "Normales Mitglied",
+  FullMember: "Volles Mitglied",
+  TrustedMember: "Vertrautes Mitglied",
+  RegularMember: "Vertrautes, normales Mitglied",  // MISSING renamed Regular Member —> Trusted Regular [RENREGLS]
+  CoreMember: "Kern-Mitglied",
 
   // Periods.
-  PastDay: "Past Day",
-  PastWeek: "Past Week",
-  PastMonth: "Past Month",
-  PastQuarter: "Past Quarter",
-  PastYear: "Past Year",
-  AllTime: "All Time",
+  PastDay: "Letzter Tag",
+  PastWeek: "Letzte Woche",
+  PastMonth: "Letzter Monat",
+  PastQuarter: "Letztes Quartal",
+  PastYear: "Letztes Jahr",
+  AllTime: "Gesamte Zeit",
 
   // Time ago letters.
   // English examples: "3d" in forum topic list means 3 days ago. "5h" is 5 hours.
-  monthsLtr: "mon",  // months
+  monthsLtr: "Mon.",  // months
   daysLtr: "d",      // days
   hoursLtr: "h",     // hours
-  minsLtr: "m",      // minutes
+  minsLtr: "min.",      // minutes
   secsLtr: "s",      // seconds
 
   // Time ago, long text versions.
   daysAgo: (numDays: number) =>
-    numDays === 1 ? "1 day ago" : `${numDays} days ago`,
+    numDays === 1 ? "Vor einem Tag" : `Vor ${numDays} Tagen`,
 
   hoursAgo: (numHours: number) =>
-    numHours === 1 ? "1 hour ago" : `${numHours} hours ago`,
+    numHours === 1 ? "Vor einer Stunde" : `Vor ${numHours} Stunden`,
 
   minutesAgo: (numMins: number) =>
-    numMins === 1 ? "1 minute ago" : `${numMins} minutes ago`,
+    numMins === 1 ? "Vor einer Minute" : `Vor ${numMins} Minuten`,
 
   secondsAgo: (numSecs: number) =>
-    numSecs === 1 ? "1 second ago" : `${numSecs} seconds ago`,
+    numSecs === 1 ? "Vor einer Sekunde" : `Vor ${numSecs} Sekunden`,
 
 
   // Input fields, e.g. email, name etc.
 
   inp: {
     // Email address input field:
-    EmReq: "Email required",
-    NoSpcs: "No spaces please",
-    InvldAddr: "Not a valid email address",
-    NoBadChrs: "No weird characters please",
+    EmReq: "E-Mail benötigt",
+    NoSpcs: "Keine Leerzeichen, bitte",
+    InvldAddr: "Keine gültige E-Mail-Adresse",
+    NoBadChrs: "Keine Sonderzeichen",
 
     // Full name input field:
-    NotOnlSpcs: "Not just spaces please",
-    NoAt: "No @ please",
+    NotOnlSpcs: "Nicht nur Leerzeichen, bitte",
+    NoAt: "Kein @, bitte",
 
     // Username input field:
-    NoDash: "No dashes (-) please",
-    DontInclAt: "Don't include the @",
-    StartEndLtrDgt: "Start and end with a letter or a digit",
-    OnlLtrNumEtc: "Only letters (a-z, A-Z) and numbers, and _ (underscore)",
+    NoDash: "Keine Querstriche (-), bitte",
+    DontInclAt: "Keine @",
+    StartEndLtrDgt: "Beginne und ende mit einem Buchstaben oder einer Zahl",
+    OnlLtrNumEtc: "Nur Buchstaben (a-z, A-Z) und Zahlen, und _ (Unterstriche)",
     // This shown just below the username input:
-    UnUnqShrt_1: "Your ",
-    UnUnqShrt_2: "@username",
-    UnUnqShrt_3: ", unique and short",
+    UnUnqShrt_1: "Dein ",
+    UnUnqShrt_2: "@Benutzername",
+    UnUnqShrt_3: ", einzigartig und kurz",
 
     // Generic messages for all input fields:
-    TooShort: (minLength: number) => `Should be at least ${minLength} characters`,
-    TooLong: (maxLength: number) => `Too long. Should be at most ${maxLength} characters`,
+    TooShort: (minLength: number) => `Muss mindestens ${minLength} Zeichen haben`,
+    TooLong: (maxLength: number) => `Zu lang. Darf maximal ${maxLength} Zeichen haben`,
   },
 
 
   // Notification levels.
 
   nl: {
-    EveryPost: "Every Post",
-    EveryPostInTopic: "You'll be notified of all new replies in this topic.",
-    EveryPostInCat: "You'll be notified of all new topics and replies, in this category.",
-    EveryPostInTopicsWithTag: "You'll be notified of new topics with this tag, and all replies in those topics.",
-    EveryPostWholeSite: "You'll be notified of all new topics and replies, anywhere.",
+    EveryPost: "Alle Beiträge",
+    EveryPostInTopic: "Du wirst bei jeder neuen Antwort benachrichtigt.",
+    EveryPostInCat: "Du wirst bei allen neuen Themen und Antworten in dieser Kategorie benachrichtigt.",
+    EveryPostInTopicsWithTag: "Du wirst bei neuen Themen mit diesem Tag und allen Antworten in diesen Themen benachrichtigt.",
+    EveryPostWholeSite: "Du wirst bei allen neuen Themen und Antworten überall benachrichtigt.",
 
     // One will be notified about the *first* post in a new topic, only. That is, the Original Post
     // (that's what the first post is called, in a discussion forum topic).
-    NewTopics: "New Topics",
-    NewTopicsInCat: "You'll be notified of new topics in this category.",
-    NewTopicsWithTag: "You'll be notified of new topics with this tag.",
-    NewTopicsWholeSite: "You'll be notified of new topics, anywhere.",
+    NewTopics: "Neue Themen",
+    NewTopicsInCat: "Du wirst bei neuen Themen in dieser Kategorie benachrichtigt.",
+    NewTopicsWithTag: "Du wirst bei neuen Themen mit diesem Tag benachrichtigt.",
+    NewTopicsWholeSite: "Du wirst bei neuen Themen überall benachrichtigt.",
 
-    Tracking: "Tracking",
+    Tracking: "Folge ich",
 
     Normal: "Normal",
-    NormalDescr: "You'll be notified if someone talks to you, also indirectly, e.g. a " +
-        "reply to a reply to you.",
+    NormalDescr: "Du wirst benachrichtigt, wenn dir jemand antwortet, auch indirekt, z.B. eine" +
+        "Antwort auf eine Antwort von dir.",
     //NormalTopic_1: "You'll be notified if someone talks to you, or mentions your ",
     //NormalTopic_2: "@name",
 
-    Hushed: "Hushed",
-    HushedDescr: "You'll be notified only if someone talks directly to you.",
+    Hushed: "Still",
+    HushedDescr: "Du wirst nur benachrichtigt, wenn dir jemand direkt antwortet.",
 
-    Muted: "Muted",
-    MutedTopic: "No notifications.",   // MISSING removed "about this topic"
+    Muted: "Stumm",
+    MutedTopic: "Keine Benachrichtigungen.",   // MISSING removed "about this topic"
   },
 
 
   // Forum intro text
 
   fi: {
-    Edit: "Edit",
-    Hide_1: "Hide",
-    Hide_2: ", click ",
-    Hide_3: " to reopen",
+    Edit: "Bearbeiten",
+    Hide_1: "Verstecken",
+    Hide_2: ", klicken ",
+    Hide_3: " wiedereröffnen",
   },
 
 
   // Forum categories
 
   fcs: {
-    All: "All", // "All (categories)", shorter than AllCats
+    All: "Alle", // "All (categories)", shorter than AllCats
   },
 
 
@@ -241,55 +241,55 @@ var t_de_DE: TalkyardTranslations = t = {
 
   fb: {
 
-    TopicList: "Topic list",
+    TopicList: "Themenliste",
 
     // Select category dropdown
 
-    from: "from",  // MISSING used like so:  "From <Category Name>" or "From All Categories"
+    from: "von",  // MISSING used like so:  "From <Category Name>" or "From All Categories"
     in: "in",      // MISSING used like so:  "in <Category Name>" or "in All Categories"
-    AllCats: "All categories",
+    AllCats: "Alle Kategorien",
 
     // Topic sort order
 
-    Active: "Active first",      // MISSING didn't add "first" yet to transls
-    ActiveDescr: "Shows recently active topics first",
+    Active: "Aktive zuerst",      // MISSING didn't add "first" yet to transls
+    ActiveDescr: "Zeigt die zuletzt aktiven Themen zuerst",
 
-    New: "New",
-    NewDescr: "Shows newest topics first",
+    New: "Neu",
+    NewDescr: "Zeigt die neusten Themen zuerst",
 
-    Top: "Popular",              // MISSING didn't rename from Top to Popular in transls
-    TopDescr: "Shows popular topics first",
+    Top: "Beliebt",              // MISSING didn't rename from Top to Popular in transls
+    TopDescr: "Zeigt die beliebten Themen zuerst",
 
     // Topic filter dropdown
 
-    AllTopics: "All topics",
+    AllTopics: "All Themen",
 
-    ShowAllTopics: "Show all topics",
-    ShowAllTopicsDescr: "Not deleted topics though",
+    ShowAllTopics: "Zeige alle Themen",
+    ShowAllTopicsDescr: "Jedoch keine gelöschten Themen",
 
-    WaitingTopics: "Waiting topics",          // MISSING
-    OnlyWaitingDescr_1: "Shows only topics ", // MISSING changed "questions" to "topics"
-    OnlyWaitingDescr_2: "waiting ",
-    OnlyWaitingDescr_3: "for a solution or to be implemented and done",  // MISSING rewrote
+    WaitingTopics: "Wartende Themen",          // MISSING
+    OnlyWaitingDescr_1: "Zeigt nur Themen, ", // MISSING changed "questions" to "topics"
+    OnlyWaitingDescr_2: "die auf ",
+    OnlyWaitingDescr_3: "eine Lösung warten",  // MISSING rewrote
 
-    YourTopics: "Your topics",       // MISSING
-    AssignedToYou: "Assigned to you", // MISSING
+    YourTopics: "Deine Themen",       // MISSING
+    AssignedToYou: "Dir zugeordnet", // MISSING
 
-    DeletedTopics: "Show deleted",   // MISSING
-    ShowDeleted: "Show deleted",
-    ShowDeletedDescr: "Shows all topics, including deleted topics",
+    DeletedTopics: "Zeige Gelöschte",   // MISSING
+    ShowDeleted: "Zeige Gelöschte",
+    ShowDeletedDescr: "Zeige alle Themen, inklusive gelöschter",
 
     // Rightmost buttons
 
-    ViewCategories: "View categories",  // MISSING
-    EditCat: "Edit Category",
-    CreateCat: "Create Category",
-    CreateTopic: "Create Topic",
-    PostIdea: "Post an Idea",
-    AskQuestion: "Ask a Question",
-    ReportProblem: "Report a Problem",
-    CreateMindMap: "Create Mind Map",
-    CreatePage: "Create Page",
+    ViewCategories: "Zeige Kategorien",  // MISSING
+    EditCat: "Bearbeite Kategorie",
+    CreateCat: "Erstelle Kategorie",
+    CreateTopic: "Erstelle Thema",
+    PostIdea: "Erstelle eine Idee",
+    AskQuestion: "Frage eine Frage",
+    ReportProblem: "Auf ein Problem hinweisen",
+    CreateMindMap: "Erstelle eine Mindmap",
+    CreatePage: "Erstelle eine Seite",
 
   },
 
